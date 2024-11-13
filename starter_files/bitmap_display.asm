@@ -15,7 +15,7 @@
     .data
 ADDR_DSPL:
     .word 0x10008000
-
+    
     .text
 	.globl main
 
@@ -28,6 +28,7 @@ main:
     sw $t1, 0($t0)          # paint the first unit (i.e., top-left) red
     sw $t2, 4($t0)          # paint the second unit on the first row green
     sw $t3, 128($t0)        # paint the first unit on the second row blue
+    sw $t3, 256($t0)    
 exit:
     li $v0, 10              # terminate the program gracefully
     syscall

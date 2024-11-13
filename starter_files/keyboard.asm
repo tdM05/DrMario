@@ -6,7 +6,7 @@
 ##############################################################################
     .data
 ADDR_KBRD:
-    .word 0xffff0000
+    .word 0xffff0000 # .word is a memory adress, and in this adress contains another adress
 
     .text
 	.globl main
