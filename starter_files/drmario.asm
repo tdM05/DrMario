@@ -31,12 +31,14 @@ ADDR_KBRD:
     .word 0xffff0000
 BOTTLE_COlOR:
     .word 0xc0c0c0
+EMPTY_COLOR:
+    .word 0x000000
 ##############################################################################
 # Mutable Data
 ##############################################################################
 player_row: .word 2 # between 0 and 63 inclusive
 player_col: .word 8 # between 0 and 63 inclusive
-player_rotation: .word 1 # 1 means color 1 on top color 2 on bottom, 2 means color 1 on left, color 2 on right, ... this is between 1 and 4 inclusive
+player_rotation: .word 1 # 1 means color 2 on top color 1 on bottom, 2 means color 1 on left, color 2 on right, ... this is between 1 and 4 inclusive
 player_color1: .word 0xFF0000
 player_color2: .word 0x0000FF    
 ##############################################################################
@@ -53,7 +55,8 @@ main:
     addi $s1 $zero 6 # first bottle unit column
     addi $s3 $zero 1
     addi $s4 $zero 1
-draw_bottle:
+    draw_bottle:
+    
     jal draw_bottle_unit
     addi $s1 $s1 4    
     jal draw_bottle_unit
@@ -107,8 +110,75 @@ draw_bottle:
     j bottle_bottom_line
     bottle_bottom_line_done:
     
+    # Draw the player
+    jal draw_player
+
     
+
+game_loop:
+    # move input stuff
+    lw $a0 ADDR_KBRD
     
+    # tells us through v0 if key is pressed
+    jal key_pressed
+    
+    bne $v0 1 ELSE # if equals 1 (the key is pressed)
+    jal draw_player
+    j END
+ELSE:
+    jal remove_player
+END:
+    # 1b. Check which key has been pressed
+    # 2a. Check for collisions
+	# 2b. Update locations (capsules)
+	# 3. Draw the screen
+	# 4. Sleep
+
+    # 5. Go back to Step 1
+    j game_loop
+
+######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
+######################## I/O Functions #########################
+key_pressed:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+
+    # 1a. Check if key has been pressed
+    # lw loads the value in the adress. $t contains the adress that contains the value. Label are the adress that contain the value
+    lw $t0 ADDR_KBRD # loads the keyboard adress into $t0
+    lw $t8 0($t0) # loads the actual keyboard input into $t8
+    beqz $t8 no_key_pressed
+    li $v0 1
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+    no_key_pressed:
+        li $v0 0
+        #Epilogue
+        lw $ra 0($sp) # pop $ra from stack;
+        addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+        jr $ra
+
+keyboard_input:
+    # use t to store parameters (since syscall needs the a registers)
+    move $t1 $a0
+
+    li $v0, 1
+    la $a0, 1
+    syscall
+    
+    li $t2 1
+    j game_loop
+######################## Draw Functions ########################
+draw_player:
+#   TODO check rotation and draw player based on that
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
     
     # Get the starting position
     lw $a0 player_row
@@ -120,35 +190,61 @@ draw_bottle:
     lw $a0, player_color1        # $t1 = red
     move $a1, $v0       # $t0 = base address for display
     jal draw_unit
-
-game_loop:
-    # 1a. Check if key has been pressed
-    # lw loads the value in the adress. $t contains the adress that contains the value. Label are the adress that contain the value
-    lw $t0 ADDR_KBRD # loads the keyboard adress into $t0
-    lw $t8 0($t0) # loads the actual keyboard input into $t8
     
-    # move input stuff
-    lw $a0 ADDR_KBRD
+    # Get the unit one down.
+    lw $t1 player_row
+    addi $t0 $t1 1 # add 1 to the player_row
+    move $a0 $t0
+    lw $a1 player_col
+    jal get_unit
     
+    # draw second block
+    lw $a0, player_color2       # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
     
-    # push values to stack
-    addi $sp $sp -4
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+remove_player:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
     sw $ra 0($sp)
     
-    beq $t8 1 keyboard_input
+    # Get the starting position
+    lw $a0 player_row
+    lw $a1 player_col
+    jal get_unit
+
+    # first draw a block of color1
+    lw $a0, EMPTY_COLOR        # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
     
-    # 1b. Check which key has been pressed
-    # 2a. Check for collisions
-	# 2b. Update locations (capsules)
-	# 3. Draw the screen
-	# 4. Sleep
-
-    # 5. Go back to Step 1
-    j game_loop
-
-######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
-######################## Movement functions ########################
+    # Get the unit one down.
+    lw $t1 player_row
+    addi $t0 $t1 1 # add 1 to the player_row
+    move $a0 $t0
+    lw $a1 player_col
+    jal get_unit
+    
+    # draw second block
+    lw $a0, EMPTY_COLOR       # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit   
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
 draw_unit:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
     sw $a0, 0($a1)  
     sw $a0, 4($a1)
     sw $a0, 8($a1)
@@ -162,7 +258,15 @@ draw_unit:
     sw $a0, 8($a1)
     jr $ra
     
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
 get_unit:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
     # deal with col first
     lw $t0 ADDR_DSPL
     addi $t1 $zero 3 
@@ -181,7 +285,11 @@ get_unit:
         addi $a0 $a0 -1
         j get_pixel_loop
     get_pixel_end:
+        #Epilogue
+        lw $ra 0($sp) # pop $ra from stack;
+        addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
         jr $ra
+            
 
 
 draw_bottle_unit:
@@ -194,15 +302,6 @@ draw_bottle_unit:
     jal draw_unit
     jr $s5
     
-keyboard_input:
-    # use t to store parameters (since syscall needs the a registers)
-    move $t1 $a0
 
-    li $v0, 1
-    la $a0, 1
-    syscall
-    
-    li $t2 1
-    j game_loop
 
 

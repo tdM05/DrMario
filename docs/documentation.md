@@ -1,6 +1,18 @@
 # Variables
 
-# Functions
+# I/O Functions
+
+## key_pressed
+
+**Purpose**: Returns 1 if key is pressed and 0 if key has not been pressed
+
+**Parameters**: None
+
+**Return Value**
+
+- $v0 - 1 if key is pressed, and 0 if not.
+
+# Draw Functions
 
 ## get_unit
 
@@ -14,7 +26,6 @@
 **Return Value**
 
 - $v0 - Contains the adress of the top left pixel for that unit
-
 
 ## draw_unit
 
@@ -43,7 +54,7 @@
 
 - null
 
-## Draw Player
+## draw_player
 
 **Purpose**: Draws the player (location, rotation, and color are already in memory, so no parameters or return values).
 
