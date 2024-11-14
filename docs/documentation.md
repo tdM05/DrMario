@@ -15,7 +15,6 @@
 
 - $v0 - Contains the adress of the top left pixel for that unit
 
-
 ## draw_unit
 
 **Purpose**: Draws a unit of color $a0 at location $a1
@@ -43,7 +42,7 @@
 
 - null
 
-## Draw Player
+## draw_player
 
 **Purpose**: Draws the player (location, rotation, and color are already in memory, so no parameters or return values).
 

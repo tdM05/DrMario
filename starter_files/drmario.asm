@@ -107,19 +107,9 @@ draw_bottle:
     j bottle_bottom_line
     bottle_bottom_line_done:
     
+    # Draw the player
+    jal draw_player
     
-    
-    
-    # Get the starting position
-    lw $a0 player_row
-    lw $a1 player_col
-    jal get_unit
-    # Draw the player with rotation 1
-
-    # first draw a block of color1
-    lw $a0, player_color1        # $t1 = red
-    move $a1, $v0       # $t0 = base address for display
-    jal draw_unit
 
 game_loop:
     # 1a. Check if key has been pressed
@@ -148,7 +138,46 @@ game_loop:
 
 ######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
 ######################## Movement functions ########################
+draw_player:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    # Get the starting position
+    lw $a0 player_row
+    lw $a1 player_col
+    jal get_unit
+    # Draw the player with rotation 1
+
+    # first draw a block of color1
+    lw $a0, player_color1        # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    # Get the unit one down.
+    lw $t1 player_row
+    addi $t0 $t1 1 # add 1 to the player_row
+    move $a0 $t0
+    lw $a1 player_col
+    jal get_unit
+    
+    # draw second block
+    lw $a0, player_color2       # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+    
+    
 draw_unit:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
     sw $a0, 0($a1)  
     sw $a0, 4($a1)
     sw $a0, 8($a1)
@@ -162,7 +191,16 @@ draw_unit:
     sw $a0, 8($a1)
     jr $ra
     
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
 get_unit:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
     # deal with col first
     lw $t0 ADDR_DSPL
     addi $t1 $zero 3 
@@ -182,7 +220,11 @@ get_unit:
         j get_pixel_loop
     get_pixel_end:
         jr $ra
-
+        
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
 
 draw_bottle_unit:
     move $s5 $ra
