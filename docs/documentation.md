@@ -1,6 +1,18 @@
 # Variables
 
-# Functions
+# I/O Functions
+
+## key_pressed
+
+**Purpose**: Returns 1 if key is pressed and 0 if key has not been pressed
+
+**Parameters**: None
+
+**Return Value**
+
+- $v0 - 1 if key is pressed, and 0 if not.
+
+# Draw Functions
 
 ## get_unit
 
