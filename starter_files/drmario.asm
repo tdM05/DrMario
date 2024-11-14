@@ -29,12 +29,13 @@ ADDR_DSPL:
 # The address of the keyboard. Don't forget to connect it!
 ADDR_KBRD:
     .word 0xffff0000
-
+BOTTLE_COlOR:
+    .word 0xc0c0c0
 ##############################################################################
 # Mutable Data
 ##############################################################################
-player_row: .word 10 # between 0 and 63 inclusive
-player_col: .word 64 # between 0 and 63 inclusive
+player_row: .word 2 # between 0 and 63 inclusive
+player_col: .word 8 # between 0 and 63 inclusive
 player_rotation: .word 1 # 1 means color 1 on top color 2 on bottom, 2 means color 1 on left, color 2 on right, ... this is between 1 and 4 inclusive
 player_color1: .word 0xFF0000
 player_color2: .word 0x0000FF    
@@ -47,16 +48,78 @@ player_color2: .word 0x0000FF
     # Run the game.
 main:
     # Initialize the game
+    # Paint the bottle
+    addi $s0 $zero 2 # first bottle unit row
+    addi $s1 $zero 6 # first bottle unit column
+    addi $s3 $zero 1
+    addi $s4 $zero 1
+draw_bottle:
+    jal draw_bottle_unit
+    addi $s1 $s1 4    
+    jal draw_bottle_unit
+    # top line 1
+    addi $s0 $zero 3
+    addi $s1 $zero 2
+    addi $t5 $zero 7
+    bottle_top_line_1:
+    beq $s1 $t5 bottle_top_line_1_done
+    jal draw_bottle_unit
+    addi $s1 $s1 1
+    j bottle_top_line_1
+    bottle_top_line_1_done:
+    # top line 2
+    addi $s1 $s1 3
+    addi $t5 $zero 15
+    bottle_top_line_2:
+    beq $s1 $t5 bottle_top_line_2_done
+    jal draw_bottle_unit
+    addi $s1 $s1 1
+    j bottle_top_line_2
+    bottle_top_line_2_done:
+    # left line 
+    addi $s0 $zero 4
+    addi $s1 $zero 2
+    addi $t5 $zero 20
+    bottle_left_line:
+    beq $s0 $t5 bottle_left_line_done
+    jal draw_bottle_unit
+    addi $s0 $s0 1
+    j bottle_left_line
+    bottle_left_line_done:
+    # right line 
+    addi $s0 $zero 4
+    addi $s1 $zero 14
+    addi $t5 $zero 20
+    bottle_right_line:
+    beq $s0 $t5 bottle_right_line_done
+    jal draw_bottle_unit
+    addi $s0 $s0 1
+    j bottle_right_line
+    bottle_right_line_done:
+    # bottom line
+    addi $s0 $zero 19
+    addi $s1 $zero 3
+    addi $t5 $zero 15
+    bottle_bottom_line:
+    beq $s1 $t5 bottle_bottom_line_done
+    jal draw_bottle_unit
+    addi $s1 $s1 1
+    j bottle_bottom_line
+    bottle_bottom_line_done:
+    
+    
+    
+    
     # Get the starting position
     lw $a0 player_row
     lw $a1 player_col
-    jal get_pixel
+    jal get_unit
     # Draw the player with rotation 1
 
     # first draw a block of color1
     lw $a0, player_color1        # $t1 = red
     move $a1, $v0       # $t0 = base address for display
-    jal draw_pixel
+    jal draw_unit
 
 game_loop:
     # 1a. Check if key has been pressed
@@ -85,22 +148,51 @@ game_loop:
 
 ######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
 ######################## Movement functions ########################
-draw_pixel:
+draw_unit:
     sw $a0, 0($a1)  
+    sw $a0, 4($a1)
+    sw $a0, 8($a1)
+    addi $a1 $a1 256
+    sw $a0, 0($a1)  
+    sw $a0, 4($a1)
+    sw $a0, 8($a1)
+    addi $a1 $a1 256
+    sw $a0, 0($a1)  
+    sw $a0, 4($a1)
+    sw $a0, 8($a1)
     jr $ra
     
-get_pixel:
-    # deal with rows first
+get_unit:
+    # deal with col first
     lw $t0 ADDR_DSPL
-    sll $t1 $a1 2 # multiples the rows by 4 
-    add $v0 $t1 $t0
-    # deal with columns
-    lw $t0 ADDR_DSPL
+    addi $t1 $zero 3 
+    mult $t1 $a1
+    mflo $a1 
+    sll $a1 $a1 2
+    add $v0 $a1 $t0
+    # deal with row
     lw $t1 DISP_WIDTH
-    sll $t2 $a0 2 # multiples the columns by 4
-    sll $t2 $t2 6 # multiples the columns by 64
-    add $v0 $t2 $v0
-    jr $ra
+    sll $t1 $t1 2
+    get_pixel_loop:
+        beq $a0 $zero get_pixel_end
+        add $v0 $v0 $t1
+        add $v0 $v0 $t1
+        add $v0 $v0 $t1
+        addi $a0 $a0 -1
+        j get_pixel_loop
+    get_pixel_end:
+        jr $ra
+
+
+draw_bottle_unit:
+    move $s5 $ra
+    move $a0 $s0
+    move $a1 $s1
+    jal get_unit
+    lw $a0 BOTTLE_COlOR
+    move $a1 $v0
+    jal draw_unit
+    jr $s5
     
 keyboard_input:
     # use t to store parameters (since syscall needs the a registers)

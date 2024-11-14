@@ -2,9 +2,9 @@
 
 # Functions
 
-## get_pixel
+## get_unit
 
-**Purpose**: Returns the memory location of the pixel given row $a0 and column $a1
+**Purpose**: Returns the memory location of the top left pixel given unit coordinate row $a0 and column $a1
 
 **Parameters**:
 
@@ -13,29 +13,31 @@
 
 **Return Value**
 
-- $v0 - Contains the adress of the pixel
+- $v0 - Contains the adress of the top left pixel for that unit
 
-## draw_block
 
-**Purpose**: Draws a block of color $a0 at location $a1
+## draw_unit
+
+**Purpose**: Draws a unit of color $a0 at location $a1
 
 **Parameters**:
 
 - $a0 - Color
-- $a1 - The top left pixel of the block
+- $a1 - The top left pixel location in memory for that unit
 
 **Return Value**:
 
 - null
 
-## draw_pixel
+## draw_bottle_unit
 
-**Purpose**: Draws a pixel of color $a0 at location $a1
+**Purpose**: set $a0 and $a1 for draw_unit and use draw_unit to draw the draw_bottle_unit
 
 **Parameters**:
 
-- $a0 - Color
-- $a1 - The pixel location in memory
+- $s0 - Color
+- $s1 - The top left pixel location in memory for that unit
+- will use $s5 as $ra since this is a nested function
 
 **Return Value**:
 
