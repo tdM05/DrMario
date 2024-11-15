@@ -1,16 +1,44 @@
+# Constants
+
 # Variables
+
+### player_color1
+
+Color1 of the player
+
+### player_color2
+
+Color2 of the player
+
+### player_rotation:
+
+- color 1 is always the origin of the player
+- 1: color 2 on top, color 2 on bottom
+- 2: color 1 on left, color 2 on right
+- 3: color 1 on top, color 2 on bottom
+- 4: color 2 on right, color 1 on left
+
+### player_row
+
+- the row (in blocks) of the player between 0 and 64 inclusive
+
+### player_col
+
+- this is in pixels since falling down can be done pixel by pixel
+- the column (in pixels) of the player between 0 and 64 inclusive
 
 # I/O Functions
 
 ## key_pressed
 
-**Purpose**: Returns 1 if key is pressed and 0 if key has not been pressed
+**Purpose**: Tells us if a key is pressed, and what key was pressed if one was pressed.
 
 **Parameters**: None
 
 **Return Value**
 
 - $v0 - 1 if key is pressed, and 0 if not.
+- $v1 - the key that was pressed in hex.
 
 # Draw Functions
 
@@ -34,7 +62,7 @@
 **Parameters**:
 
 - $a0 - Color
-- $a1 - The top left pixel location in memory for that unit
+- $a1 - The top left pixel memory location in memory for that unit
 
 **Return Value**:
 
@@ -58,7 +86,13 @@
 
 **Purpose**: Draws the player (location, rotation, and color are already in memory, so no parameters or return values).
 
-## Move Right
+## remove_player
+
+**Purpose**: Removes the player by drawing black pixels in player's location.
+
+# Movement functions
+
+## d_pressed
 
 **Purpose**: Moves the player right based on the top left corner of the player
 

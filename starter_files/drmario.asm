@@ -33,6 +33,9 @@ BOTTLE_COlOR:
     .word 0xc0c0c0
 EMPTY_COLOR:
     .word 0x000000
+#Keyboard#
+D:
+    .word 0x64
 ##############################################################################
 # Mutable Data
 ##############################################################################
@@ -116,17 +119,21 @@ main:
     
 
 game_loop:
-    # move input stuff
-    lw $a0 ADDR_KBRD
-    
-    # tells us through v0 if key is pressed
+	li 		$v0, 32
+	li 		$a0, 1
+	syscall
+    # tells us through v0 if key is pressed, and v1 is the key pressed assuming v0 is 1.
     jal key_pressed
-    
+    #################### HANDLES KEY PRESSED ###############################
     bne $v0 1 ELSE # if equals 1 (the key is pressed)
-    jal draw_player
+    
+    lw $t0 D
+    beq $v1 $t0 d_pressed
+    
     j END
 ELSE:
-    jal remove_player
+#################### HANDLES KEY NOT PRESSED ###############################
+    
 END:
     # 1b. Check which key has been pressed
     # 2a. Check for collisions
@@ -139,18 +146,53 @@ END:
 
 ######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
 ######################## I/O Functions #########################
+d_pressed:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+#print 1 to test if working
+    li $v0 1
+    li $a0 1
+    syscall
+    # actual code
+    jal remove_player
+    
+    # Assume the rotation is 1
+    # move the color 1 to the right (currently col 2 is on top so we have to fix this to make col 1 the origin)
+    lw $t0 player_col
+    addi $t0 $t0 1
+    sw $t0 player_col
+    jal draw_player
+    
+    
+    
+    
+    
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
 key_pressed:
     # Prologue
     addi $sp $sp -4 #allocate stack space
     sw $ra 0($sp)
 
+
     # 1a. Check if key has been pressed
     # lw loads the value in the adress. $t contains the adress that contains the value. Label are the adress that contain the value
     lw $t0 ADDR_KBRD # loads the keyboard adress into $t0
+    
     lw $t8 0($t0) # loads the actual keyboard input into $t8
     beqz $t8 no_key_pressed
     li $v0 1
     
+    # load the actual key press into $v1
+    lw $t0, ADDR_KBRD               
+    lw $t8, 0($t0)       
+    lw $v1, 4($t0) 
     #Epilogue
     lw $ra 0($sp) # pop $ra from stack;
     addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
@@ -191,9 +233,9 @@ draw_player:
     move $a1, $v0       # $t0 = base address for display
     jal draw_unit
     
-    # Get the unit one down.
+    # Get the unit one up.
     lw $t1 player_row
-    addi $t0 $t1 1 # add 1 to the player_row
+    addi $t0 $t1 -1 # add 1 to the player_row
     move $a0 $t0
     lw $a1 player_col
     jal get_unit
@@ -225,7 +267,7 @@ remove_player:
     
     # Get the unit one down.
     lw $t1 player_row
-    addi $t0 $t1 1 # add 1 to the player_row
+    addi $t0 $t1 -1 # add 1 to the player_row
     move $a0 $t0
     lw $a1 player_col
     jal get_unit
