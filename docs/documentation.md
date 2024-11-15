@@ -92,7 +92,7 @@ Color2 of the player
 
 # Movement functions
 
-## d_pressed
+## move_right
 
 **Purpose**: Moves the player right based on the top left corner of the player
 

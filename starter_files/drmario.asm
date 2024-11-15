@@ -39,7 +39,7 @@ D:
 ##############################################################################
 # Mutable Data
 ##############################################################################
-player_row: .word 2 # between 0 and 63 inclusive
+player_row: .word 3 # between 0 and 63 inclusive
 player_col: .word 8 # between 0 and 63 inclusive
 player_rotation: .word 1 # 1 means color 2 on top color 1 on bottom, 2 means color 1 on left, color 2 on right, ... this is between 1 and 4 inclusive
 player_color1: .word 0xFF0000
@@ -126,9 +126,12 @@ game_loop:
     jal key_pressed
     #################### HANDLES KEY PRESSED ###############################
     bne $v0 1 ELSE # if equals 1 (the key is pressed)
-    
+    # if d pressed
     lw $t0 D
-    beq $v1 $t0 d_pressed
+    bne $v1 $t0 NOT_D
+    jal move_right
+    NOT_D:
+    beq $v1 $t0 w_pressed
     
     j END
 ELSE:
@@ -146,15 +149,23 @@ END:
 
 ######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
 ######################## I/O Functions #########################
-d_pressed:
+w_pressed:
     # Prologue
     addi $sp $sp -4 #allocate stack space
     sw $ra 0($sp)
     
-#print 1 to test if working
-    li $v0 1
-    li $a0 1
-    syscall
+    
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+move_right:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+
     # actual code
     jal remove_player
     
@@ -164,11 +175,6 @@ d_pressed:
     addi $t0 $t0 1
     sw $t0 player_col
     jal draw_player
-    
-    
-    
-    
-    
     
     #Epilogue
     lw $ra 0($sp) # pop $ra from stack;
