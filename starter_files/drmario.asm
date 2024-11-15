@@ -36,6 +36,12 @@ EMPTY_COLOR:
 #Keyboard#
 D:
     .word 0x64
+W:
+    .word 0x77
+A:
+    .word 0x61
+S:
+    .word 0x73
 ##############################################################################
 # Mutable Data
 ##############################################################################
@@ -126,12 +132,26 @@ game_loop:
     jal key_pressed
     #################### HANDLES KEY PRESSED ###############################
     bne $v0 1 ELSE # if equals 1 (the key is pressed)
+    # remove the previous frame
+        jal remove_player
     # if d pressed
-    lw $t0 D
-    bne $v1 $t0 NOT_D
-    jal move_right
+        lw $t0 D
+        bne $v1 $t0 NOT_D
+        jal move_right_position
+        # here we check if $v0 and $v1 are valid for collision
+        sw $v0 player_row
+        sw $v1 player_col
+        jal draw_player
+        j END
     NOT_D:
-    beq $v1 $t0 w_pressed
+        # if w pressed
+        lw $t0 W
+        bne $v1 $t0 NOT_W
+        jal rotate_position
+        sw $v0 player_rotation
+        jal draw_player
+        J END
+    NOT_W:
     
     j END
 ELSE:
@@ -149,32 +169,41 @@ END:
 
 ######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
 ######################## I/O Functions #########################
-w_pressed:
+rotate_position:
     # Prologue
     addi $sp $sp -4 #allocate stack space
     sw $ra 0($sp)
     
+    lw $t0 player_rotation # we must move t0 to the next rotation state
     
+    bne $t0 4 ROTATION_NOT_4
+    # rotation is 4
+    li $t0 1
+    j ROTATE_END
+    ROTATION_NOT_4:
+    addi $t0 $t0 1
+    ROTATE_END:
+    # t0 contains new rotation
+    move $v0 $t0
     
     #Epilogue
     lw $ra 0($sp) # pop $ra from stack;
     addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
     jr $ra
     
-move_right:
+move_right_position:
     # Prologue
     addi $sp $sp -4 #allocate stack space
     sw $ra 0($sp)
-
-    # actual code
-    jal remove_player
     
     # Assume the rotation is 1
-    # move the color 1 to the right (currently col 2 is on top so we have to fix this to make col 1 the origin)
-    lw $t0 player_col
-    addi $t0 $t0 1
-    sw $t0 player_col
-    jal draw_player
+    # move the color 1 to the right 
+    lw $t1 player_col
+    addi $t1 $t1 1
+    lw $t0 player_row
+    ##### Here we check if the new row, col collides with anything #########
+    move $v0 $t0
+    move $v1 $t1
     
     #Epilogue
     lw $ra 0($sp) # pop $ra from stack;
@@ -183,7 +212,7 @@ move_right:
     
 key_pressed:
     # Prologue
-    addi $sp $sp -4 #allocate stack space
+    addi $sp $sp -4 # allocate stack space
     sw $ra 0($sp)
 
 
@@ -228,6 +257,38 @@ draw_player:
     addi $sp $sp -4 #allocate stack space
     sw $ra 0($sp)
     
+    # Get rotation and store in $t3
+    lw $t3 player_rotation
+        #IF ROTATION IS 1
+        bne $t3 1 DRAW_PLAYER_ROTATION_NOT_1
+        jal draw_player_with_rotation_1
+        j DRAW_PLAYER_END
+    DRAW_PLAYER_ROTATION_NOT_1:
+        #IF ROTATION IS 2
+        bne $t3 2 DRAW_PLAYER_ROTATION_NOT_2
+        jal draw_player_with_rotation_2
+        j DRAW_PLAYER_END
+    DRAW_PLAYER_ROTATION_NOT_2:
+        #IF ROTATION IS 3
+        bne $t3 3 DRAW_PLAYER_ROTATION_NOT_3
+        jal draw_player_with_rotation_3
+        j DRAW_PLAYER_END
+    DRAW_PLAYER_ROTATION_NOT_3:
+        #IF ROTATION IS 4
+        jal draw_player_with_rotation_4
+        j DRAW_PLAYER_END
+    DRAW_PLAYER_END:
+        #Epilogue
+        lw $ra 0($sp) # pop $ra from stack;
+        addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+        jr $ra
+
+# a helper for draw_player
+draw_player_with_rotation_1:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
     # Get the starting position
     lw $a0 player_row
     lw $a1 player_col
@@ -256,7 +317,7 @@ draw_player:
     addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
     jr $ra
     
-remove_player:
+draw_player_with_rotation_2:
     # Prologue
     addi $sp $sp -4 #allocate stack space
     sw $ra 0($sp)
@@ -265,13 +326,150 @@ remove_player:
     lw $a0 player_row
     lw $a1 player_col
     jal get_unit
+    # Draw the player with rotation 1
+
+    # first draw a block of color1
+    lw $a0, player_color1        # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    
+    lw $t0 player_row
+    move $a0 $t0
+    
+    lw $t1 player_col
+    addi $t1 $t1 1
+    move $a1 $t1
+    jal get_unit
+    
+    # draw second block
+    lw $a0, player_color2       # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+   draw_player_with_rotation_3:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    # Get the starting position
+    lw $a0 player_row
+    lw $a1 player_col
+    jal get_unit
+    # Draw the player with rotation 1
+
+    # first draw a block of color1
+    lw $a0, player_color1        # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    # now deal with second block
+    lw $t0 player_row
+    addi $t0 $t0 1
+    move $a0 $t0
+    
+    lw $t1 player_col
+    move $a1 $t1
+    jal get_unit
+    
+    # draw second block
+    lw $a0, player_color2       # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+   draw_player_with_rotation_4:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    # Get the starting position
+    lw $a0 player_row
+    lw $a1 player_col
+    jal get_unit
+    # Draw the player with rotation 1
+
+    # first draw a block of color1
+    lw $a0, player_color1        # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    # now deal with second block
+    lw $t0 player_row
+    move $a0 $t0
+    
+    lw $t1 player_col
+    addi $t1 $t1 -1
+    move $a1 $t1
+    jal get_unit
+    
+    # draw second block
+    lw $a0, player_color2       # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+     
+remove_player:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    # Get rotation and store in $t3
+    lw $t3 player_rotation
+        #IF ROTATION IS 1
+        bne $t3 1 REMOVE_PLAYER_ROTATION_NOT_1
+        jal remove_player_with_rotation_1
+        j REMOVE_PLAYER_END
+    REMOVE_PLAYER_ROTATION_NOT_1:
+        #if rotation is 2
+        bne $t3 2 REMOVE_PLAYER_ROTATION_NOT_2
+        jal remove_player_with_rotation_2
+        j REMOVE_PLAYER_END
+    REMOVE_PLAYER_ROTATION_NOT_2:
+        #IF ROTATION IS 3
+        bne $t3 3 REMOVE_PLAYER_ROTATION_NOT_3
+        jal remove_player_with_rotation_3
+        j REMOVE_PLAYER_END
+    REMOVE_PLAYER_ROTATION_NOT_3:
+        #IF ROTATION IS 4
+        jal remove_player_with_rotation_4
+        j REMOVE_PLAYER_END
+    REMOVE_PLAYER_END:
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+remove_player_with_rotation_1:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    # Get the starting position
+    lw $a0 player_row
+    lw $a1 player_col
+    jal get_unit
+    # Draw the player with rotation 1
 
     # first draw a block of color1
     lw $a0, EMPTY_COLOR        # $t1 = red
     move $a1, $v0       # $t0 = base address for display
     jal draw_unit
     
-    # Get the unit one down.
+    # Get the unit one up.
     lw $t1 player_row
     addi $t0 $t1 -1 # add 1 to the player_row
     move $a0 $t0
@@ -281,13 +479,119 @@ remove_player:
     # draw second block
     lw $a0, EMPTY_COLOR       # $t1 = red
     move $a1, $v0       # $t0 = base address for display
-    jal draw_unit   
+    jal draw_unit
     
     #Epilogue
     lw $ra 0($sp) # pop $ra from stack;
     addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
     jr $ra
     
+remove_player_with_rotation_2:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    # Get the starting position
+    lw $a0 player_row
+    lw $a1 player_col
+    jal get_unit
+    # Draw the player with rotation 1
+
+    # first draw a block of color1
+    lw $a0, EMPTY_COLOR        # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    
+    lw $t0 player_row
+    move $a0 $t0
+    
+    lw $t1 player_col
+    addi $t1 $t1 1
+    move $a1 $t1
+    jal get_unit
+    
+    # draw second block
+    lw $a0, EMPTY_COLOR       # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+remove_player_with_rotation_3:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    # Get the starting position
+    lw $a0 player_row
+    lw $a1 player_col
+    jal get_unit
+    # Draw the player with rotation 1
+
+    # first draw a block of color1
+    lw $a0, EMPTY_COLOR        # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    # now deal with second block
+    lw $t0 player_row
+    addi $t0 $t0 1
+    move $a0 $t0
+    
+    lw $t1 player_col
+    move $a1 $t1
+    jal get_unit
+    
+    # draw second block
+    lw $a0, EMPTY_COLOR       # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+remove_player_with_rotation_4:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    # Get the starting position
+    lw $a0 player_row
+    lw $a1 player_col
+    jal get_unit
+    # Draw the player with rotation 1
+
+    # first draw a block of color1
+    lw $a0, EMPTY_COLOR    
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    # now deal with second block
+    lw $t0 player_row
+    move $a0 $t0
+    
+    lw $t1 player_col
+    addi $t1 $t1 -1
+    move $a1 $t1
+    jal get_unit
+    
+    # draw second block
+    lw $a0, EMPTY_COLOR       # $t1 = red
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+     
+     
 draw_unit:
     # Prologue
     addi $sp $sp -4 #allocate stack space

@@ -1,5 +1,9 @@
 # Constants
 
+### EMPTY_COLOR
+
+This is black
+
 # Variables
 
 ### player_color1
@@ -16,7 +20,7 @@ Color2 of the player
 - 1: color 2 on top, color 2 on bottom
 - 2: color 1 on left, color 2 on right
 - 3: color 1 on top, color 2 on bottom
-- 4: color 2 on right, color 1 on left
+- 4: color 2 on left, color 1 on right
 
 ### player_row
 
@@ -92,7 +96,7 @@ Color2 of the player
 
 # Movement functions
 
-## move_right
+## move_right_position
 
 **Purpose**: Moves the player right based on the top left corner of the player
 
@@ -102,4 +106,17 @@ Color2 of the player
 
 **Return Value**
 
+- $v0 - The new player_col position
+- $v1 - The new player_row position
+
+## rotate_position
+
+**Purpose**: Rotates the player 90 degrees clockwise
+
+**Parameters**:
+
 - null
+
+**Return Value**
+
+- $v0 - The new player_rotation
