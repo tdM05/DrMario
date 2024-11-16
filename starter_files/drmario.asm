@@ -234,7 +234,7 @@ END:
         move $a1 $v1
         lw $a2 player_rotation
         jal can_move_here_with_rotation_i
-        beq $v0 0 GAME_LOOP_EPILOGUE
+        beq $v0 0 HIT_BOTTOM
         
         sw $s2 player_row
         sw $s3 player_col
@@ -252,8 +252,11 @@ PLAYER_NOT_FAST_FALLING:
     lw $t0 PLAYER_NORMAL_FALL_DIVIDER
     sub $t0 $zero $t0 # make it negative
     add $s1 $s1 $t0
-
-GAME_LOOP_EPILOGUE:
+    
+    jal draw_player
+    j game_loop
+HIT_BOTTOM:
+# here we check for four (or more) in a rows, remove four in a rows, and then make all floating blocks fall, then add a new player capsule.
     jal draw_player
     j game_loop
 
