@@ -21,7 +21,7 @@
 ##############################################################################
 PLAYER_FAST_FALL_DIVIDER: .word 30
 PLAYER_NORMAL_FALL_DIVIDER: .word 4
-PLAYER_TOTAL_FALL_TIME: .word 100
+PLAYER_TOTAL_FALL_TIME: .word 300
 
 DISP_WIDTH:
     .word 64
@@ -137,40 +137,75 @@ game_loop:
 	li 		$v0, 32
 	li 		$a0, 1
 	syscall
+	
+    # remove the previous frame
+    jal remove_player
+        
     # tells us through v0 if key is pressed, and v1 is the key pressed assuming v0 is 1.
     jal key_pressed
     #################### HANDLES KEY PRESSED ###############################
     bne $v0 1 ELSE # if equals 1 (the key is pressed)
         move $s0 $v1 # $s0 should not change here since it contains the actual key.
-    # remove the previous frame
-        jal remove_player
+        
     # if d pressed
         lw $t0 D
         bne $s0 $t0 NOT_D
         jal move_right_position
+        
+        # Here we check collision
+        # save the expected position
+        move $s2 $v0
+        move $s3 $v1
         # here we check if $v0 and $v1 are valid for collision
-        sw $v0 player_row
-        sw $v1 player_col
-        jal draw_player
+        move $a0 $v0
+        move $a1 $v1
+        lw $a2 player_rotation
+        jal can_move_here_with_rotation_i
+        beq $v0 0 END
+        
+        
+        sw $s2 player_row
+        sw $s3 player_col
         j END
     NOT_D:
+            
         # if w pressed
         lw $t0 W
         bne $s0 $t0 NOT_W
         jal rotate_position
+
         # here check if this rotation ($v0) is valid for collision
-        sw $v0 player_rotation
-        jal draw_player
+        # save the expected rotation
+        move $s4 $v0
+        
+        move $a2 $s4 # load the rotation argument with expected rotation
+        lw $a0 player_row
+        lw $a1 player_col
+        jal can_move_here_with_rotation_i
+        beq $v0 0 END
+        
+        sw $s4 player_rotation
         J END
     NOT_W:
         # if a pressed
         lw $t0 A
         bne $s0 $t0 NOT_A
         jal move_left_position
+        
+        # Here we check collision
+        # save the expected position
+        move $s2 $v0
+        move $s3 $v1
         # here we check if $v0 and $v1 are valid for collision
-        sw $v0 player_row
-        sw $v1 player_col
-        jal draw_player
+        move $a0 $v0
+        move $a1 $v1
+        lw $a2 player_rotation
+        jal can_move_here_with_rotation_i
+        beq $v0 0 END
+        
+        
+        sw $s2 player_row
+        sw $s3 player_col
         j END
         
     NOT_A:
@@ -179,10 +214,6 @@ game_loop:
         bne $s0 $t0 END
         li $t0 1 # set fast_fall to true
         sw $t0 player_is_fast_falling
-        
-        # make sure to redraw the player at the same position since we previously erased the player
-        jal draw_player
-        
         j END
 ELSE:
 #################### HANDLES KEY NOT PRESSED ###############################
@@ -190,15 +221,24 @@ ELSE:
 END:
     # if $s1 is greater than 0, don't move down
     slt $t0 $zero $s1 # $t0 is 1 if 0 < $s1, 0 otherwise
-    beq $t0 1 DO_NOT_MOVE_DOWN
-    # remove the previous frame
-        jal remove_player
-        
+    beq $t0 1 DO_NOT_MOVE_DOWN 
+        # here we want to move down
         jal move_down_position 
-        sw $v0 player_row
-        sw $v1 player_col
-        jal draw_player
-        # reset $s0
+        
+        # Here we check for collision
+        # save the expected position
+        move $s2 $v0
+        move $s3 $v1
+        # check if $v0 and $v1 are valid for collision
+        move $a0 $v0
+        move $a1 $v1
+        lw $a2 player_rotation
+        jal can_move_here_with_rotation_i
+        beq $v0 0 GAME_LOOP_EPILOGUE
+        
+        sw $s2 player_row
+        sw $s3 player_col
+        # reset $s1
         lw $s1 PLAYER_TOTAL_FALL_TIME
 DO_NOT_MOVE_DOWN:
     # if fast falling, then load the fast fall multiplyer, else load the normal multiplier
@@ -213,9 +253,109 @@ PLAYER_NOT_FAST_FALLING:
     sub $t0 $zero $t0 # make it negative
     add $s1 $s1 $t0
 
+GAME_LOOP_EPILOGUE:
+    jal draw_player
     j game_loop
 
 ######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
+
+
+######################## Collision Functions #########################
+        
+can_move_here_with_rotation_i:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s0 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s1 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s2 0($sp)
+    
+    # s0 and s1 store the row and column.
+    move $s0 $a0
+    move $s1 $a1
+    jal block_empty
+    beq $v0 0 can_not_move_here_with_rotation_i_END
+    # we can move to the first block, now check second block based on rotation
+    move $t0 $a2
+    beq $t0 1 HERE_ROTATION_IS_1
+    beq $t0 2 HERE_ROTATION_IS_2
+    beq $t0 3 HERE_ROTATION_IS_3
+    beq $t0 4 HERE_ROTATION_IS_4
+    # These functions get the second block location based on rotation
+    HERE_ROTATION_IS_1:
+        addi $s0 $s0 -1
+        j TEST_SECOND_BLOCK_IS_EMPTY
+    HERE_ROTATION_IS_2:
+        addi $s1 $s1 1
+        j TEST_SECOND_BLOCK_IS_EMPTY    
+    HERE_ROTATION_IS_3:
+        addi $s0 $s0 1
+        j TEST_SECOND_BLOCK_IS_EMPTY
+    HERE_ROTATION_IS_4:
+        addi $s1 $s1 -1
+        j TEST_SECOND_BLOCK_IS_EMPTY
+    
+    TEST_SECOND_BLOCK_IS_EMPTY:
+    move $a0 $s0
+    move $a1 $s1
+    jal block_empty
+    beq $v0 0 can_not_move_here_with_rotation_i_END
+    
+    # so we can move here
+    li $v0 1
+    #Epilogue
+    lw $s2 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s1 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s0 0($sp) # pop $s0 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+    can_not_move_here_with_rotation_i_END:
+        li $v0 0
+        #Epilogue
+        lw $s2 0($sp) # pop $s1 from stack;
+        addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+        lw $s1 0($sp) # pop $s1 from stack;
+        addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+        lw $s0 0($sp) # pop $s0 from stack;
+        addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+        lw $ra 0($sp) # pop $ra from stack;
+        addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+        jr $ra
+    
+block_empty:
+    # Notice that we only need to check the top left pixel since everything is in blocks
+    
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    # $a0 and $a1 are already correctly loaded
+    jal get_unit
+    
+    lw $t0 EMPTY_COLOR
+    lw $t1 0($v0) # t1 contains the color for the top left pixel in question
+    beq $t1 $t0 BLOCK_IS_EMPTY
+    # block is not empty
+        li $v0 0
+        #Epilogue
+        lw $ra 0($sp) # pop $ra from stack;
+        addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+        jr $ra
+    BLOCK_IS_EMPTY:
+        li $v0 1
+        #Epilogue
+        lw $ra 0($sp) # pop $ra from stack;
+        addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+        jr $ra
+        
 ######################## I/O Functions #########################
 rotate_position:
     # Prologue
