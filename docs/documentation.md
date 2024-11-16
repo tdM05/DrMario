@@ -1,16 +1,71 @@
+# Registers to not modify during game loop
+
+- $s0 - this always contains the key pressed
+- $s1 - this is a countdown for when to move down (it moves down when it hits 0).
+
+# Constants
+
+### EMPTY_COLOR
+
+This is black
+
+### PLAYER_TOTAL_FALL_TIME
+
+The default amount of frames until we move down. When $s0 hits 0, it moves down, then
+$s0 resets to this constant.
+
+### PLAYER_FAST_FALL_DIVIDER
+
+Divides PLAYER_TOTAL_FALL_TIME to speed up the fast fall time.
+
+### PLAYER_NORMAL_FALL_DIVIDER
+
+Divides PLAYER_TOTAL_FALL_TIME to speed up the normal fall time.
+
 # Variables
+
+### player_is_fast_falling
+
+1 if the player is fast falling (has pressed s) and 0 if not. Once a player has pressed s,
+the pill will continue to fast fall until a new pill is created.
+
+### player_color1
+
+Color1 of the player
+
+### player_color2
+
+Color2 of the player
+
+### player_rotation:
+
+- color 1 is always the origin of the player
+- 1: color 2 on top, color 2 on bottom
+- 2: color 1 on left, color 2 on right
+- 3: color 1 on top, color 2 on bottom
+- 4: color 2 on left, color 1 on right
+
+### player_row
+
+- the row (in blocks) of the player between 0 and 64 inclusive
+
+### player_col
+
+- this is in pixels since falling down can be done pixel by pixel
+- the column (in pixels) of the player between 0 and 64 inclusive
 
 # I/O Functions
 
 ## key_pressed
 
-**Purpose**: Returns 1 if key is pressed and 0 if key has not been pressed
+**Purpose**: Tells us if a key is pressed, and what key was pressed if one was pressed.
 
 **Parameters**: None
 
 **Return Value**
 
 - $v0 - 1 if key is pressed, and 0 if not.
+- $v1 - the key that was pressed in hex.
 
 # Draw Functions
 
@@ -34,7 +89,7 @@
 **Parameters**:
 
 - $a0 - Color
-- $a1 - The top left pixel location in memory for that unit
+- $a1 - The top left pixel memory location in memory for that unit
 
 **Return Value**:
 
@@ -58,14 +113,60 @@
 
 **Purpose**: Draws the player (location, rotation, and color are already in memory, so no parameters or return values).
 
-## Move Right
+## remove_player
 
-**Purpose**: Moves the player right based on the top left corner of the player
+**Purpose**: Removes the player by drawing black pixels in player's location.
+
+# Movement functions
+
+## move_down_position
+
+**Purpose**: Moves the player down fast or normal.
 
 **Parameters**:
 
-- $a0 - The top left corner of the player
+- $a0 - 1 if fast fall, 0 if normal speed.
 
 **Return Value**
 
+- $v0 - The new player_col position
+
+- $v1 - The new player_row position
+
+## move_right_position
+
+**Purpose**: Moves the player right
+
+**Parameters**:
+
 - null
+
+**Return Value**
+
+- $v0 - The new player_col position
+- $v1 - The new player_row position
+
+## move_left_position
+
+**Purpose**: Moves the player left
+
+**Parameters**:
+
+- null
+
+**Return Value**
+
+- $v0 - The new player_col position
+- $v1 - The new player_row position
+
+## rotate_position
+
+**Purpose**: Rotates the player 90 degrees clockwise
+
+**Parameters**:
+
+- null
+
+**Return Value**
+
+- $v0 - The new player_rotation
