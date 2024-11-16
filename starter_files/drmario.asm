@@ -19,6 +19,10 @@
 ##############################################################################
 # Immutable Data
 ##############################################################################
+PLAYER_FAST_FALL_DIVIDER: .word 30
+PLAYER_NORMAL_FALL_DIVIDER: .word 4
+PLAYER_TOTAL_FALL_TIME: .word 100
+
 DISP_WIDTH:
     .word 64
 DISP_HEIGHT:
@@ -49,7 +53,10 @@ player_row: .word 3 # between 0 and 63 inclusive
 player_col: .word 8 # between 0 and 63 inclusive
 player_rotation: .word 1 # 1 means color 2 on top color 1 on bottom, 2 means color 1 on left, color 2 on right, ... this is between 1 and 4 inclusive
 player_color1: .word 0xFF0000
-player_color2: .word 0x0000FF    
+player_color2: .word 0x0000FF   
+
+player_is_fast_falling: .word 0
+
 ##############################################################################
 # Code
 ##############################################################################
@@ -121,7 +128,9 @@ main:
     
     # Draw the player
     jal draw_player
-
+    
+    # initialize $s1
+    lw $s1 PLAYER_TOTAL_FALL_TIME
     
 
 game_loop:
@@ -132,11 +141,12 @@ game_loop:
     jal key_pressed
     #################### HANDLES KEY PRESSED ###############################
     bne $v0 1 ELSE # if equals 1 (the key is pressed)
+        move $s0 $v1 # $s0 should not change here since it contains the actual key.
     # remove the previous frame
         jal remove_player
     # if d pressed
         lw $t0 D
-        bne $v1 $t0 NOT_D
+        bne $s0 $t0 NOT_D
         jal move_right_position
         # here we check if $v0 and $v1 are valid for collision
         sw $v0 player_row
@@ -146,25 +156,63 @@ game_loop:
     NOT_D:
         # if w pressed
         lw $t0 W
-        bne $v1 $t0 NOT_W
+        bne $s0 $t0 NOT_W
         jal rotate_position
+        # here check if this rotation ($v0) is valid for collision
         sw $v0 player_rotation
         jal draw_player
         J END
     NOT_W:
-    
-    j END
+        # if a pressed
+        lw $t0 A
+        bne $s0 $t0 NOT_A
+        jal move_left_position
+        # here we check if $v0 and $v1 are valid for collision
+        sw $v0 player_row
+        sw $v1 player_col
+        jal draw_player
+        j END
+        
+    NOT_A:
+        # if s presseed
+        lw $t0 S
+        bne $s0 $t0 END
+        li $t0 1 # set fast_fall to true
+        sw $t0 player_is_fast_falling
+        
+        # make sure to redraw the player at the same position since we previously erased the player
+        jal draw_player
+        
+        j END
 ELSE:
 #################### HANDLES KEY NOT PRESSED ###############################
     
 END:
-    # 1b. Check which key has been pressed
-    # 2a. Check for collisions
-	# 2b. Update locations (capsules)
-	# 3. Draw the screen
-	# 4. Sleep
+    # if $s1 is greater than 0, don't move down
+    slt $t0 $zero $s1 # $t0 is 1 if 0 < $s1, 0 otherwise
+    beq $t0 1 DO_NOT_MOVE_DOWN
+    # remove the previous frame
+        jal remove_player
+        
+        jal move_down_position 
+        sw $v0 player_row
+        sw $v1 player_col
+        jal draw_player
+        # reset $s0
+        lw $s1 PLAYER_TOTAL_FALL_TIME
+DO_NOT_MOVE_DOWN:
+    # if fast falling, then load the fast fall multiplyer, else load the normal multiplier
+    lw $t1 player_is_fast_falling
+    bne $t1 1 PLAYER_NOT_FAST_FALLING
+    # here player is fast falling
+    lw $t0 PLAYER_FAST_FALL_DIVIDER
+    sub $t0 $zero $t0 # make it negative
+    add $s1 $s1 $t0
+PLAYER_NOT_FAST_FALLING:
+    lw $t0 PLAYER_NORMAL_FALL_DIVIDER
+    sub $t0 $zero $t0 # make it negative
+    add $s1 $s1 $t0
 
-    # 5. Go back to Step 1
     j game_loop
 
 ######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
@@ -191,17 +239,48 @@ rotate_position:
     addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
     jr $ra
     
+move_down_position:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    lw $t1 player_col
+    
+    lw $t0 player_row
+    addi $t0 $t0 1
+    
+    move $v0 $t0
+    move $v1 $t1
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
 move_right_position:
     # Prologue
     addi $sp $sp -4 #allocate stack space
     sw $ra 0($sp)
     
-    # Assume the rotation is 1
-    # move the color 1 to the right 
     lw $t1 player_col
     addi $t1 $t1 1
     lw $t0 player_row
-    ##### Here we check if the new row, col collides with anything #########
+    move $v0 $t0
+    move $v1 $t1
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+move_left_position:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    lw $t1 player_col
+    addi $t1 $t1 -1
+    lw $t0 player_row
     move $v0 $t0
     move $v1 $t1
     
