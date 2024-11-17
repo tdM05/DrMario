@@ -2,6 +2,9 @@
 
 - $s0 - this always contains the key pressed
 - $s1 - this is a countdown for when to move down (it moves down when it hits 0).
+- $s2 - this saves the player's expected next row before checking collision
+- $s3 - this saves the player's expected next column before checking collision
+- $s4 - this saves the player's expected next rotation before checking collision
 
 # Constants
 
@@ -12,7 +15,7 @@ This is black
 ### PLAYER_TOTAL_FALL_TIME
 
 The default amount of frames until we move down. When $s0 hits 0, it moves down, then
-$s0 resets to this constant.
+$s0 resets to this constant.;
 
 ### PLAYER_FAST_FALL_DIVIDER
 
@@ -40,7 +43,7 @@ Color2 of the player
 ### player_rotation:
 
 - color 1 is always the origin of the player
-- 1: color 2 on top, color 2 on bottom
+- 1: color 2 on top, color 1 on bottom
 - 2: color 1 on left, color 2 on right
 - 3: color 1 on top, color 2 on bottom
 - 4: color 2 on left, color 1 on right
@@ -170,3 +173,31 @@ Color2 of the player
 **Return Value**
 
 - $v0 - The new player_rotation
+
+# Collision Functions
+
+## can_move_here_with_rotation_i:
+
+**Purpose**: Tells us if the player can move to this location with rotation i. This is
+a helper function for can_move_here.
+
+**Parameters**:
+
+- $a0 - The row
+- $a1 - The column
+- $a2 - The rotation (i).
+
+  **Return Value**
+
+- $v0 - Returns 1 if we can move here and 0 if we cannot
+
+## block_empty
+
+**Purpose**: Tells us if this block is empty
+
+- $a0 - The row
+- $a1 - The column
+
+**Return Value**:
+
+- $v0 - Returns 1 if it is empty and 0 otherwise.
