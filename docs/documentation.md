@@ -201,3 +201,35 @@ a helper function for can_move_here.
 **Return Value**:
 
 - $v0 - Returns 1 if it is empty and 0 otherwise.
+
+# Process Hit Bottom Functions
+
+## remove_four_in_a_row
+
+**Purpose**: Removes all four in a rows on the screen
+
+**Parameters**: Null
+
+**Return Value**: Returns 1 if at least one four in a row has been removed, zero otherwise.
+
+## set_capsule_locations
+
+**Purpose**: Sets a location in capsule_locations with a capsule position
+so that we know which capsules need to be moved when calling move_capsules_down
+
+**Parameters**:
+
+- $a0 the row
+- $a1 the column
+- $a2 the rotation
+
+**Return Value**: None
+
+## move_capsules_down
+
+**Purpose**: Moves all capsules in capsule_locations to the bottom, based on
+the screen positions.
+
+**Parameters**: Null
+
+**Return Value**: None
