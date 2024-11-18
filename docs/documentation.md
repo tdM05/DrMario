@@ -65,6 +65,9 @@ Color2 of the player
 - this is in pixels since falling down can be done pixel by pixel
 - the column (in pixels) of the player between 0 and 64 inclusive
 
+### move_col_array
+- array of information to move col down (col, empty row # , first row # need to move, # of unit need to be moved)
+
 # I/O Functions
 
 ## key_pressed
@@ -110,6 +113,29 @@ Color2 of the player
 
 - $a0 - Color
 - $a1 - The top left pixel memory location in memory for that unit
+
+
+## move_one_unit_down
+
+**Purpose**: Draws a move unit with top left corner address $a1 to unit with top left corner address $a0. 
+
+**Parameters**:
+
+- $a0 - down address 
+- $a1 - original adress
+
+
+
+## move_col_down
+
+**Purpose**: move 1 columb down 
+
+**Parameters**:
+- use move_col_array
+- 0 - col number 
+- 1 - empty row # 
+- 2 - first row # need to move 
+- 3 - # of col need to move 
 
 
 ## draw_row
