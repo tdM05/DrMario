@@ -102,6 +102,16 @@ Color2 of the player
 - $a0 - Color
 - $a1 - The top left pixel memory location in memory for that unit
 
+## draw_virus_pattern
+
+**Purpose**: Draws a virus pattern of color $a0 at location $a1
+
+**Parameters**:
+
+- $a0 - Color
+- $a1 - The top left pixel memory location in memory for that unit
+
+
 ## draw_row
 
 **Purpose**: Draws a row from $a0 to $a1 with row $a2, and color $a3

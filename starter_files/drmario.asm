@@ -21,7 +21,7 @@
 ##############################################################################
 PLAYER_FAST_FALL_DIVIDER: .word 30
 PLAYER_NORMAL_FALL_DIVIDER: .word 6
-PLAYER_TOTAL_FALL_TIME: .word 100
+PLAYER_TOTAL_FALL_TIME: .word 300
 
 # Dimensions
 BOTAL_TOP_ROW: .word 4
@@ -65,7 +65,7 @@ player_rotation: .word 1 # 1 means color 2 on top color 1 on bottom, 2 means col
 player_color1: .word 0x0000FF
 player_color2: .word 0x0000FF   
 next_player_color1: .word 0x0000FF
-next_player_color2: .word 0x0000FF  
+next_player_color2: .word 0x0000FF 
 capsule_orientation_array: .space 660  # array of orientation of capsule. 11 col x 15 row graid left top corner coordinate ： col 3 row 4
 player_is_fast_falling: .word 0
 
@@ -201,6 +201,9 @@ main:
     move $a0 $t9
     move $a1 $t8
     jal draw_unit
+    addi $a0 $zero 0x000000
+    move $a1 $t8
+    jal draw_virus_pattern
     
     addi $s7 $s7 1
     j virus_loop
@@ -1291,6 +1294,26 @@ draw_unit:
     sw $a0, 0($a1)  
     sw $a0, 4($a1)
     sw $a0, 8($a1)
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+    
+draw_virus_pattern:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+
+    sw $a0, 4($a1)
+    addi $a1 $a1 256
+    sw $a0, 0($a1)  
+    sw $a0, 8($a1)
+    addi $a1 $a1 256  
+    sw $a0, 4($a1)
+
     
     #Epilogue
     lw $ra 0($sp) # pop $ra from stack;
