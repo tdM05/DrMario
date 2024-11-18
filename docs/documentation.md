@@ -303,3 +303,15 @@ the screen positions.
 **Parameters**: Null
 
 **Return Value**: None
+
+
+
+## update_number_of_unit_need_move
+**Purpose**: find number of unit need move for move col down 
+
+**Parameters**: 
+- $a0 row 
+- $a1 col
+
+**Return Value**: 
+- $v0 # of unit need to be moved 

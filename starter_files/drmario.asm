@@ -68,7 +68,7 @@ next_player_color1: .word 0x0000FF
 next_player_color2: .word 0x0000FF 
 move_col_array: .word 0:4  # array of information to move col down (col, empty row # , first row # need to move, # of unit need to be moved)
 capsule_orientation_array: .space 660  # array of orientation of capsule. 11 col x 15 row graid left top corner coordinate ： col 3 row 4
-
+number_of_col_to_move: .word 0 # this is the place to record number of col need to move for 4 in a row move everything down horizontal 
 player_is_fast_falling: .word 0
 
 ##############################################################################
@@ -530,9 +530,63 @@ remove_four_in_a_row:
                     
                     move $a0 $t2 # load the row start + 1
                     move $a1 $t1 # load the row end - 1
-                    move $a2 $s0              
+                    move $a2 $s0  
+                    
+                    la $a3 move_col_array
+                    sw $a0 0($a3)
+                    sw $a2 4($a3)
+                    addi $s0 $s0 -1
+                    sw $s0 8($a3)
+                    # record how many col need to be moved 
+                    la $t9 number_of_col_to_move
+                    sub $t8 $a1 $a0
+                    addi $t8 $t8 1
+                    sw $t8 0($t9)
+                    
                     li $a3 0x0
                     jal draw_row
+                    
+                    
+                    
+                    
+                    # we find # of unit need to be moved 
+                    la $t9 number_of_col_to_move
+                    lw $t8 0($t9)               # $t8 hold # of col need to move 
+                    li $t9 0 
+                    row_move_everything_loop:
+                    beq $t8 $t9 row_move_everything_down_done
+                    # we find # of unit need to be moved 
+                    
+                    
+                    
+                    # find the row col # put in $a0 $a1
+                    la $a3 move_col_array
+                    lw $a0 4($a3)
+                    lw $a1 0($a3)                    
+                    
+                    jal update_number_of_unit_need_move
+                    
+                    sw $v0 12($a3)
+                    
+       
+                    
+                    
+                    
+                    
+                    
+                    jal move_col_down
+                    
+                    lw $a0 0($a3)
+                    addi $a0 $a0 1
+                    sw $a0 0($a3)
+                    
+                    addi $t9 $t9 1
+                    j row_move_everything_loop
+                    row_move_everything_down_done:
+                    
+                    
+                    
+                    
                     
                     # reset the saved position and color
                     move $s2 $s1                
@@ -682,7 +736,7 @@ update_number_of_unit_need_move:
     
     
     move $s0 $a0
-    move $s1 $s1
+    move $s1 $a1
     li $s7 0
     number_of_unit_loop:
     addi $s0 $s0 -1 
@@ -707,6 +761,8 @@ update_number_of_unit_need_move:
     j number_of_unit_loop
     number_of_unit_end:
     move $v0 $s7
+    
+    
     #Epilogue
     lw $s1 0($sp)
     addi $sp $sp 4
