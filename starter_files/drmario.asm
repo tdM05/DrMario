@@ -52,15 +52,19 @@ A:
     .word 0x61
 S:
     .word 0x73
+next_capsule_row: .word 4 
+next_capsule_col: .word 17 
 ##############################################################################
 # Mutable Data
 ##############################################################################
 player_row: .word 3 # between 0 and 63 inclusive
 player_col: .word 8 # between 0 and 63 inclusive
 player_rotation: .word 1 # 1 means color 2 on top color 1 on bottom, 2 means color 1 on left, color 2 on right, ... this is between 1 and 4 inclusive
-player_color1: .word 0xFF0000
+player_color1: .word 0x0000FF
 player_color2: .word 0x0000FF   
-
+next_player_color1: .word 0x0000FF
+next_player_color2: .word 0x0000FF  
+capsule_orientation_array: .space 660  # array of orientation of capsule. 11 col x 15 row graid left top corner coordinate ： col 3 row 4
 player_is_fast_falling: .word 0
 
 ##############################################################################
@@ -78,7 +82,6 @@ main:
     addi $s3 $zero 1
     addi $s4 $zero 1
     draw_bottle:
-    
     jal draw_bottle_unit
     addi $s1 $s1 4    
     jal draw_bottle_unit
@@ -132,14 +135,124 @@ main:
     j bottle_bottom_line
     bottle_bottom_line_done:
     
+    
+    
+    # clear capsule_orientation_array
+    la $t3, capsule_orientation_array    # $t3 holds address of capsule_orientation_array
+    add $t0, $zero $zero                 # t0 holds 4*i, initially 0
+    addi $t1, $zero, 660                # $t1 holds capsule_orientation_array's size*4
+    clear_capsule_orientation_array_loop:
+    bge $t0 $t1 clear_capsule_orientation_array_end
+    add $t4, $t3 $t0                     # $t4 holds addr(capsule_orientation_array[i])
+    sw $zero 0($t4)                      # capsule_orientation_array[i] = 0
+    addi $t0,$t0 4                       # update offset in $t0
+    j clear_capsule_orientation_array_loop
+    clear_capsule_orientation_array_end:
+    
+    
+    # spawn 4 virus 
+    
+    addi $sp $sp -4 #allocate stack space
+    sw $s6 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s7 0($sp)
+    
+    addi $s6 $zero 4 # $s6 hold 4 (max i )
+    addi $s7 $zero 0 # $s7 hold i (start from 0)
+    virus_loop:
+    beq $s6 $s7 spwan_virus_done
+    # random col
+    li $v0, 42
+    li $a0, 0
+    li $a1, 11
+    syscall
+    move $t3 $a0    
+    addi $t3 $t3 3  # $t3 hold random col
+    
+    # random row
+    li $v0, 42
+    li $a0, 0
+    li $a1, 8
+    syscall
+    move $t4 $a0    
+    addi $t4 $t4 11  # $t4 hold random row
+    
+    move $a0 $t4
+    move $a1 $t3
+    jal get_unit
+    lw $t5 0($v0)
+    addi $t6 $zero 0x000000
+    bne $t5 $t6 virus_loop  # check if its already painted if yes get another random location 
+    move $t8 $v0            
+    
+    li $v0, 42
+    li $a0, 0
+    li $a1, 3
+    syscall         
+    sll $a0 $a0 3       # $a0 0 8 16
+    addi $t9 $zero 0x0000ff
+    sllv $t9 $t9 $a0   # $t9 0xff0000 0x00ff00 0x0000ff  yello 0xffff00
+    addi $t0 $zero 0x00ff00
+    bne $t9 $t0 handle_yellow_virus_color_1
+    addi $t9 $t9 0xff0000
+    handle_yellow_virus_color_1:
+    move $a0 $t9
+    move $a1 $t8
+    jal draw_unit
+    
+    addi $s7 $s7 1
+    j virus_loop
+    spwan_virus_done:
+    lw $s7 0($sp) 
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s6 0($sp) 
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    
+    
+    
+    
+    # randomize player color 1 and 2 
+    li $v0, 42
+    li $a0, 0
+    li $a1, 3
+    syscall         
+    sll $a0 $a0 3       # now $a0 is a random number of 0, 2, 4 
+    addi $t1 $zero 0x0000ff
+    sllv $t1 $t1 $a0   
+    addi $t0 $zero 0x00ff00
+    bne $t1 $t0 handle_yellow_player_color_1
+    addi $t1 $t1 0xff0000
+    handle_yellow_player_color_1:
+    sw $t1 player_color1
+    li $v0, 42
+    li $a0, 0
+    li $a1, 3
+    syscall         
+    sll $a0 $a0 3      # now $a0 is a random number of 0, 2, 4 
+    addi $t1 $zero 0x0000ff
+    sllv $t1 $t1 $a0   
+    addi $t0 $zero 0x00ff00
+    bne $t1 $t0 handle_yellow_player_color_2
+    addi $t1 $t1 0xff0000
+    handle_yellow_player_color_2:
+    sw $t1 player_color2
+    
+    
+    # randomize next player color 1 and 2 
+    jal randomize_next_capsule
+    
+    
+    #Draw the next capsule section 
+    jal draw_next_capsule
+    
     # Draw the player
     jal draw_player
     
     # initialize $s1
     lw $s1 PLAYER_TOTAL_FALL_TIME
     
+ game_loop:   
 
-game_loop:
 	li 		$v0, 32
 	li 		$a0, 1
 	syscall
@@ -263,12 +376,35 @@ PLAYER_NOT_FAST_FALLING:
     j game_loop
 HIT_BOTTOM:
 # here we check for four (or more) in a rows, remove four in a rows, and then make all floating blocks fall, then add a new player capsule.
+
     jal draw_player
-    jal remove_four_in_a_row
-
-    # put all the logic like 
+    sw $zero  player_is_fast_falling
+    # reset the player location 
+    addi $t0 $zero 3
+    sw $t0 player_row
+    addi $t0 $zero 8
+    sw $t0 player_col
+    # give next color to player color 
+    lw $a0 next_capsule_row
+    lw $a1 next_capsule_col
+    jal get_unit
+    lw $t0 0($v0)
+    sw $t0 player_color1
+    
+    lw $a0 next_capsule_row
+    addi $a0 $a0 1
+    lw $a1 next_capsule_col
+    jal get_unit
+    lw $t0 0($v0)
+    sw $t0 player_color2
+    
+    # draw new player capsule 
+    jal draw_player
+    # randomnize next color and draw
+    jal randomize_next_capsule
+    jal draw_next_capsule
     j game_loop
-
+    
 ######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
 
 ########################### HIT_BOTTOM ###################################
@@ -1057,6 +1193,72 @@ draw_bottle_unit:
     jal draw_unit
     jr $s5
     
+draw_next_capsule:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+    # Get the starting position
+    lw $a0 next_capsule_row
+    lw $a1 next_capsule_col
+    jal get_unit
+    # Draw the next capsule with rotation 1
+
+    # first draw a block of color1
+    lw $a0, next_player_color1       
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+    # Get the second position
+    lw $a0 next_capsule_row
+    addi $a0 $a0 1
+    lw $a1 next_capsule_col
+    jal get_unit
+
+    # second draw the second block of color2
+    lw $a0, next_player_color2       
+    move $a1, $v0       # $t0 = base address for display
+    jal draw_unit
+    
+ #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
 
 
 
+
+randomize_next_capsule: 
+# Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+
+li $v0, 42
+    li $a0, 0
+    li $a1, 3
+    syscall         
+    sll $a0 $a0 3       # now $a0 is a random number of 0, 2, 4 
+    addi $t1 $zero 0x0000ff
+    sllv $t1 $t1 $a0   
+    addi $t0 $zero 0x00ff00
+    bne $t1 $t0 handle_yellow_next_player_color_1
+    addi $t1 $t1 0xff0000
+    handle_yellow_next_player_color_1:
+    sw $t1 next_player_color1
+    li $v0, 42
+    li $a0, 0
+    li $a1, 3
+    syscall         
+    sll $a0 $a0 3      # now $a0 is a random number of 0, 2, 4 
+    addi $t1 $zero 0x0000ff
+    sllv $t1 $t1 $a0   
+    addi $t0 $zero 0x00ff00
+    bne $t1 $t0 handle_yellow_next_player_color_2
+    addi $t1 $t1 0xff0000
+    handle_yellow_next_player_color_2:
+    sw $t1 next_player_color2
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
