@@ -38,6 +38,8 @@ BOTTLE_COlOR:
 EMPTY_COLOR:
     .word 0x000000
 #Keyboard#
+Q:
+    .word 0x71
 D:
     .word 0x64
 W:
@@ -260,7 +262,13 @@ main:
     bne $v0 1 ELSE # if equals 1 (the key is pressed)
         move $s0 $v1 # $s0 should not change here since it contains the actual key.
         
-    # if d pressed
+   # if q preseed 
+        lw $t0 Q
+        bne $s0 $t0 Not_Q
+        jal draw_player
+        li $v0, 10 # terminate the program gracefully syscall
+        syscall    
+    Not_Q:
         lw $t0 D
         bne $s0 $t0 NOT_D
         jal move_right_position
@@ -373,11 +381,36 @@ HIT_BOTTOM:
 
     jal draw_player
     sw $zero  player_is_fast_falling
+    # if bottle neck has color then game end 
+    li $a0 3
+    li $a1 7
+    jal get_unit
+    lw $t0 0($v0)
+    bne $t0 $zero die
+    li $a0 3
+    li $a1 8
+    jal get_unit
+    lw $t0 0($v0)
+    bne $t0 $zero die
+    li $a0 3
+    li $a1 9
+    jal get_unit
+    lw $t0 0($v0)
+    bne $t0 $zero die
+    j still_alive
+    die:
+    li $v0, 10
+    syscall
+    
+    
+    still_alive:
     # reset the player location 
     addi $t0 $zero 3
     sw $t0 player_row
     addi $t0 $zero 8
     sw $t0 player_col
+    addi $t0 $zero 1 
+    sw $t0 player_rotation
     # give next color to player color 
     lw $a0 next_capsule_row
     lw $a1 next_capsule_col
