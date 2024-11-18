@@ -12,6 +12,14 @@
 
 This is black
 
+### BOTAL_TOP_ROW
+
+### BOTAL_BOTTOM_ROW
+
+### BOTAL_LEFT_COL
+
+### BOTAL_RIGHT_COL
+
 ### PLAYER_TOTAL_FALL_TIME
 
 The default amount of frames until we move down. When $s0 hits 0, it moves down, then
@@ -93,6 +101,17 @@ Color2 of the player
 
 - $a0 - Color
 - $a1 - The top left pixel memory location in memory for that unit
+
+## draw_row
+
+**Purpose**: Draws a row from $a0 to $a1 with column $a2, and color $a3
+
+**Parameters**:
+
+- $a0 - row start
+- $a1 - row end
+- $a2 - the column number
+- $a3 - the color
 
 **Return Value**:
 

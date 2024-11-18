@@ -21,7 +21,13 @@
 ##############################################################################
 PLAYER_FAST_FALL_DIVIDER: .word 30
 PLAYER_NORMAL_FALL_DIVIDER: .word 4
-PLAYER_TOTAL_FALL_TIME: .word 300
+PLAYER_TOTAL_FALL_TIME: .word 100
+
+# Dimensions
+BOTAL_TOP_ROW: .word 4
+BOTAL_BOTTOM_ROW: .word 20
+BOTAL_LEFT_COL: .word 3
+BOTAL_RIGHT_COL: .word 13
 
 DISP_WIDTH:
     .word 64
@@ -258,11 +264,187 @@ PLAYER_NOT_FAST_FALLING:
 HIT_BOTTOM:
 # here we check for four (or more) in a rows, remove four in a rows, and then make all floating blocks fall, then add a new player capsule.
     jal draw_player
+    jal remove_four_in_a_row
+
+    # put all the logic like 
     j game_loop
 
 ######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
 
-
+########################### HIT_BOTTOM ###################################
+remove_four_in_a_row:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s0 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s1 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s2 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s3 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s4 0($sp)
+    
+    #s0 = row incrementer
+    # $s1 = col incrementer
+    #s2 = last different position
+    #s4 = last color
+    
+    # go row by row (increment column
+    lw $s0 BOTAL_BOTTOM_ROW
+    lw $s1 BOTAL_LEFT_COL
+    
+    addi $s0 $s0 -1
+    REMOVE_FOUR_IN_A_ROW_ROW_LOOP:
+            addi $s0 $s0 -1
+            lw $s1 BOTAL_LEFT_COL
+            addi $s1 $s1 -1
+            
+            move $s2 $s1
+        REMOVE_FOUR_IN_A_COL_ROW_LOOP:
+                addi $s1 $s1 1        
+                
+                move $a0 $s0
+                move $a1 $s1
+                jal get_unit
+                
+                # if new color is not the last color, we reset the count and check to see if $s1-$s2>=5. If this is true, we remove from $s2 to $s1 exclusive.
+                # else we increment $s1 (done on next iteration)
+                bne $v0 $s4 REMOVE_FOUR_IN_A_ROW_RESET_COUNT
+                # else 
+                j REMOVE_FOUR_IN_A_COL_ROW_LOOP_END
+                REMOVE_FOUR_IN_A_ROW_RESET_COUNT:
+                    # if new color is not the last color, we reset $s2 and check to see if $s1-$s2>=5. If this is true, we remove from $s2 to $s1 exclusive.
+                    sub $t0, $s1, $s2        # $t0 = $s1 - $s2
+                    li $t1, 5                # Load the value 5 into $t1
+                    slt $t2, $t0, $t1        # $t2 = 1 if $t0 < $t1, else $t2 = 0
+                    # if $s1-$s2>=5, we branch to REMOVE_EVERYTHING_BETWEEN_S2_AND_S4
+                    beq $t2, $zero, REMOVE_EVERYTHING_BETWEEN_S2_AND_S1 
+                    # since $s1-$s2 < 5, we restart the process by moving the current column into the old position
+                    move $s2 $s1
+                    j REMOVE_FOUR_IN_A_COL_ROW_LOOP_END
+                REMOVE_EVERYTHING_BETWEEN_S2_AND_S1:
+                    # start at s2+1, and loop until s4 - 1 to set everything between black
+                                    
+                    #s0 = row incrementer
+                    #s1 = col incrementer
+                    #s2 = last different position
+                    #s4 = last color
+                    
+                    jal draw_row
+                    addi $t2 $s2 1
+                    addi $t1 $s1 -1
+                    
+                    move $a0 $t2 # load the row start + 1
+                    move $a1 $t1 # load the row end - 1
+                    move $a2 $s0              
+                    li $a3 0x0
+                    jal draw_row
+                    
+                    #set $s2 to new position
+                    move $s2 $s1
+                    
+                    
+                    j REMOVE_FOUR_IN_A_COL_ROW_LOOP_END
+                
+                REMOVE_FOUR_IN_A_COL_ROW_LOOP_END:
+                lw $t1 BOTAL_RIGHT_COL
+                bne $s1 $t1 REMOVE_FOUR_IN_A_COL_ROW_LOOP
+                
+       lw $t0 BOTAL_TOP_ROW       
+       bne $s0 $t0 REMOVE_FOUR_IN_A_ROW_ROW_LOOP 
+    
+    
+    # go column by column
+    # lw $s0 BOTAL_BOTTOM_ROW
+    # lw $s1 BOTAL_LEFT_COL
+    
+    # addi $s1 $s1 -1
+    # REMOVE_FOUR_IN_A_ROW_COL_LOOP2:
+            # addi $s1 $s1 1
+            # lw $s0 BOTAL_BOTTOM_ROW
+            # addi $s0 $s0 -1
+        # REMOVE_FOUR_IN_A_ROW_ROW_LOOP2:
+                # addi $s0 $s0 -1
+                
+                # #do something here
+                # move $a0 $s0
+                # move $a1 $s1
+                # jal get_unit
+                
+                # li $a0 0xffffff
+                # move $a1 $v0
+                # jal draw_unit
+                
+                # lw $t0 BOTAL_TOP_ROW
+                # bne $s0 $t0 REMOVE_FOUR_IN_A_ROW_ROW_LOOP2
+                
+       # lw $t1 BOTAL_RIGHT_COL       
+       # bne $s1 $t1 REMOVE_FOUR_IN_A_ROW_COL_LOOP2 
+       
+    
+    #Epilogue
+    lw $s4 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s3 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s2 0($sp) # pop $s0 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s1 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s0 0($sp) # pop $s0 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+draw_row:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s0 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s1 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s2 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s3 0($sp)
+    
+    move $s0 $a0 # $s0 is our row incrementer
+    move $s1 $a1
+    move $s2 $a2 # the column
+    move $s3 $a3 # the color
+    
+    addi $s0 $s0 -1
+    DRAW_ROW_LOOP:
+        addi $s0 $s0 1
+        
+        move $a0 $s0
+        move $a1 $s2
+        jal get_unit
+        
+        move $a0 $s3
+        move $a1 $v0
+        jal draw_unit
+        
+        bne $s0 $s1 DRAW_ROW_LOOP
+    
+    
+    #Epilogue
+    lw $s3 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s2 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s1 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s0 0($sp) # pop $s0 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
 ######################## Collision Functions #########################
         
 can_move_here_with_rotation_i:
@@ -830,7 +1012,6 @@ draw_unit:
     sw $a0, 0($a1)  
     sw $a0, 4($a1)
     sw $a0, 8($a1)
-    jr $ra
     
     #Epilogue
     lw $ra 0($sp) # pop $ra from stack;
