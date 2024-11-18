@@ -104,12 +104,27 @@ Color2 of the player
 
 ## draw_row
 
-**Purpose**: Draws a row from $a0 to $a1 with column $a2, and color $a3
+**Purpose**: Draws a row from $a0 to $a1 with row $a2, and color $a3
 
 **Parameters**:
 
 - $a0 - row start
 - $a1 - row end
+- $a2 - the row number
+- $a3 - the color
+
+**Return Value**:
+
+- null
+
+## draw_col
+
+**Purpose**: Draws a col from $a0 to $a1 with column $a2, and color $a3
+
+**Parameters**:
+
+- $a0 - col start
+- $a1 - col end
 - $a2 - the column number
 - $a3 - the color
 
@@ -252,5 +267,3 @@ the screen positions.
 **Parameters**: Null
 
 **Return Value**: None
-
-
