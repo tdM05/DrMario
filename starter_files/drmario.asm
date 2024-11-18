@@ -21,7 +21,7 @@
 ##############################################################################
 PLAYER_FAST_FALL_DIVIDER: .word 30
 PLAYER_NORMAL_FALL_DIVIDER: .word 6
-PLAYER_TOTAL_FALL_TIME: .word 100
+PLAYER_TOTAL_FALL_TIME: .word 300
 
 # Dimensions
 BOTAL_TOP_ROW: .word 4
@@ -65,8 +65,10 @@ player_rotation: .word 1 # 1 means color 2 on top color 1 on bottom, 2 means col
 player_color1: .word 0x0000FF
 player_color2: .word 0x0000FF   
 next_player_color1: .word 0x0000FF
-next_player_color2: .word 0x0000FF  
+next_player_color2: .word 0x0000FF 
+move_col_array: .word 0:4  # array of information to move col down (col, empty row # , first row # need to move, # of unit need to be moved)
 capsule_orientation_array: .space 660  # array of orientation of capsule. 11 col x 15 row graid left top corner coordinate ： col 3 row 4
+number_of_col_to_move: .word 0 # this is the place to record number of col need to move for 4 in a row move everything down horizontal 
 player_is_fast_falling: .word 0
 
 ##############################################################################
@@ -201,6 +203,9 @@ main:
     move $a0 $t9
     move $a1 $t8
     jal draw_unit
+    addi $a0 $zero 0x000000
+    move $a1 $t8
+    jal draw_virus_pattern
     
     addi $s7 $s7 1
     j virus_loop
@@ -525,9 +530,63 @@ remove_four_in_a_row:
                     
                     move $a0 $t2 # load the row start + 1
                     move $a1 $t1 # load the row end - 1
-                    move $a2 $s0              
+                    move $a2 $s0  
+                    
+                    la $a3 move_col_array
+                    sw $a0 0($a3)
+                    sw $a2 4($a3)
+                    addi $s0 $s0 -1
+                    sw $s0 8($a3)
+                    # record how many col need to be moved 
+                    la $t9 number_of_col_to_move
+                    sub $t8 $a1 $a0
+                    addi $t8 $t8 1
+                    sw $t8 0($t9)
+                    
                     li $a3 0x0
                     jal draw_row
+                    
+                    
+                    
+                    
+                    # we find # of unit need to be moved 
+                    la $t9 number_of_col_to_move
+                    lw $t8 0($t9)               # $t8 hold # of col need to move 
+                    li $t9 0 
+                    row_move_everything_loop:
+                    beq $t8 $t9 row_move_everything_down_done
+                    # we find # of unit need to be moved 
+                    
+                    
+                    
+                    # find the row col # put in $a0 $a1
+                    la $a3 move_col_array
+                    lw $a0 4($a3)
+                    lw $a1 0($a3)                    
+                    
+                    jal update_number_of_unit_need_move
+                    
+                    sw $v0 12($a3)
+                    
+       
+                    
+                    
+                    
+                    
+                    
+                    jal move_col_down
+                    
+                    lw $a0 0($a3)
+                    addi $a0 $a0 1
+                    sw $a0 0($a3)
+                    
+                    addi $t9 $t9 1
+                    j row_move_everything_loop
+                    row_move_everything_down_done:
+                    
+                    
+                    
+                    
                     
                     # reset the saved position and color
                     move $s2 $s1                
@@ -599,8 +658,40 @@ remove_four_in_a_row:
                     move $a0 $t1
                     move $a1 $t2
                     move $a2 $s1
+
+                    
+                    # here we update move_col_array 
+                    la $a3 move_col_array
+                    sw $a2 0($a3)
+                    sw $a1 4($a3)
+                    addi $t1 $t1 -1
+                    sw $t1 8($a3)
+                    # here we need to find # of unit need to be moved 
+                    
+                    addi $sp $sp -4 #allocate stack space
+                    sw $a0 0($sp)
+                    addi $sp $sp -4 #allocate stack space
+                    sw $a1 0($sp)
+                    move $a1 $a2
+                    jal update_number_of_unit_need_move
+                    
+                    sw $v0 12($a3)
+                    
+                    
+                    lw $a1 0($sp) # pop $s1 from stack;
+                    addi $sp $sp 4
+                    lw $a0 0($sp) # pop $s1 from stack;
+                    addi $sp $sp 4
+                    
+                    
+                    
+                    
+                    
                     li $a3 0x0
                     jal draw_col
+                    
+                    
+                    jal move_col_down
                     
                    # restart the process
                     move $s2 $s0
@@ -632,7 +723,57 @@ remove_four_in_a_row:
     lw $ra 0($sp) # pop $ra from stack;
     addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
     jr $ra
+
+update_number_of_unit_need_move:
+  
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    addi $sp $sp -4 
+    sw $s0 0($sp)
+    addi $sp $sp -4 
+    sw $s1 0($sp)
     
+    
+    move $s0 $a0
+    move $s1 $a1
+    li $s7 0
+    number_of_unit_loop:
+    addi $s0 $s0 -1 
+    li $t2 3
+    beq $s0 $t2 number_of_unit_end
+    move $a0 $s0 
+    move $a1 $s1
+    jal get_unit
+    lw $t1 0($v0)
+    li $t2 0x0000ff
+    beq $t1 $t2 number_of_unit_1
+    li $t2 0xff0000
+    beq $t1 $t2 number_of_unit_1
+    li $t2 0xffff00
+    beq $t1 $t2 number_of_unit_1
+    j number_of_unit_end
+    number_of_unit_1:
+    lw $t1 4($v0)
+    li $t2 0x000000
+    beq $t1 $t2 number_of_unit_end
+    addi $s7 $s7 1
+    j number_of_unit_loop
+    number_of_unit_end:
+    move $v0 $s7
+    
+    
+    #Epilogue
+    lw $s1 0($sp)
+    addi $sp $sp 4
+    lw $s0 0($sp)
+    addi $sp $sp 4 
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+    
+
 draw_row:
     # Prologue
     addi $sp $sp -4 #allocate stack space
@@ -1297,6 +1438,26 @@ draw_unit:
     addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
     jr $ra
     
+    
+draw_virus_pattern:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    
+
+    sw $a0, 4($a1)
+    addi $a1 $a1 256
+    sw $a0, 0($a1)  
+    sw $a0, 8($a1)
+    addi $a1 $a1 256  
+    sw $a0, 4($a1)
+
+    
+    #Epilogue
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
 get_unit:
     # Prologue
     addi $sp $sp -4 #allocate stack space
@@ -1363,7 +1524,7 @@ draw_next_capsule:
     move $a1, $v0       # $t0 = base address for display
     jal draw_unit
     
- #Epilogue
+    # Epilogue
     lw $ra 0($sp) # pop $ra from stack;
     addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
     jr $ra
@@ -1373,11 +1534,11 @@ draw_next_capsule:
 
 
 randomize_next_capsule: 
-# Prologue
+    # Prologue
     addi $sp $sp -4 #allocate stack space
     sw $ra 0($sp)
 
-li $v0, 42
+    li $v0, 42
     li $a0, 0
     li $a1, 3
     syscall         
@@ -1405,4 +1566,109 @@ li $v0, 42
     lw $ra 0($sp) # pop $ra from stack;
     addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
     
+    jr $ra
+    
+    
+Move_one_unit_down:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $t0 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $t1 0($sp)
+    
+    move $t0 $a0    # $t0 holds down adress 
+    move $t1 $a1    # $t1 holds original adress
+    
+    # draw unit at down adress 
+    lw $a0 0($t1)   
+    move $a1 $t0
+    jal draw_unit
+    # draw black at original adress 
+    addi $a0 $zero 0x000000
+    move $a1 $t1 
+    jal draw_unit 
+    # Epilogue
+    lw $t1 0($sp) # pop $ra from stack;
+    addi $sp $sp 4
+    lw $t0 0($sp) # pop $ra from stack;
+    addi $sp $sp 4
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
+    
+move_col_down:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s0 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s1 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s2 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s3 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s4 0($sp)
+    # s0-s4
+    
+    
+    la $s4 move_col_array   # $s4 hold array address
+    lw $s0 0($s4)           # $s0 hold col number 
+    lw $s1 4($s4)           # $s1 hold empty row # (before check if unit down is empty) 
+    lw $s2 8($s4)           # $s2 hold first row # need to move
+    lw $s3 12($s4)          # $s3 hold # of unit need to be moved
+    
+    # modify $s1 for unit down is empty 
+    down_unit_loop:
+    addi $s1 $s1 +1
+    move $a0 $s1 
+    move $a1 $s0 
+    jal get_unit
+    lw $v0 0($v0)
+    li $s7 0x000000
+    beq $v0 $s7 down_unit_loop
+    addi $s1 $s1 -1
+    
+    add $s5 $zero $zero
+    move_col_loop:
+    beq $s5 $s3 move_col_end
+    # get empty unit address 
+    move $a0 $s1 
+    move $a1 $s0 
+    jal get_unit
+    move $s4 $v0
+    # get colored unit address 
+    move $a0 $s2
+    move $a1 $s0
+    jal get_unit
+    
+    # move one unit down 
+    move $a0 $s4
+    move $a1 $v0 
+    jal Move_one_unit_down
+    addi $s2 $s2 -1
+    addi $s1 $s1 -1
+    
+    addi $s5 $s5 1
+    j move_col_loop
+    move_col_end:
+    
+    
+    
+    #Epilogue
+    lw $s4 0($sp) 
+    addi $sp $sp 4 
+    lw $s3 0($sp)
+    addi $sp $sp 4
+    lw $s2 0($sp) 
+    addi $sp $sp 4 
+    lw $s1 0($sp) 
+    addi $sp $sp 4 
+    lw $s0 0($sp) 
+    addi $sp $sp 4 
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
     jr $ra
