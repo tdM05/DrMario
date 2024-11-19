@@ -8,10 +8,10 @@
 # creation, and will indicate otherwise when it is not.
 #
 ######################## Bitmap Display Configuration ########################
-# - Unit width in pixels:       TODO
-# - Unit height in pixels:      TODO
-# - Display width in pixels:    TODO
-# - Display height in pixels:   TODO
+# - Unit width in pixels:       1
+# - Unit height in pixels:      1
+# - Display width in pixels:    64
+# - Display height in pixels:   64
 # - Base Address for Display:   0x10008000 ($gp)
 ##############################################################################
 
