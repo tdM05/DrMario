@@ -23,8 +23,8 @@ PLAYER_FAST_FALL_DIVIDER: .word 30
 PLAYER_NORMAL_FALL_DIVIDER: .word 6
 PLAYER_TOTAL_FALL_TIME: .word 300
 
-FRAMES_IN_SIXTEENTH_NOTE: .word 10
-SIXTEENTH_NOTES_IN_TRACK: .word 2
+FRAMES_IN_SIXTEENTH_NOTE: .word 15
+SIXTEENTH_NOTES_IN_TRACK: .word 128
 
 # Dimensions
 BOTAL_TOP_ROW: .word 4
@@ -79,6 +79,7 @@ player_is_fast_falling: .word 0
 sixteenth_note_number: .word 0
 # this is used to increment sixteenth_note_number. Resets when it gets to FRAMES_IN_SIXTEENTH_NOTE
 sixteenth_note_frame_incrementer: .word 1
+do_not_play_note_on_this_frame: .byte 1
 ##############################################################################
 # Code
 ##############################################################################
@@ -87,12 +88,6 @@ sixteenth_note_frame_incrementer: .word 1
 
     # Run the game.
 main:
-    li $v0 31
-    li $a0 0
-    li $a1 10000
-    li $a2 0
-    li $a3 100
-    syscall
     # Initialize the game
     # Paint the bottle
     addi $s0 $zero 2 # first bottle unit row
@@ -484,16 +479,255 @@ play_music:
     addi $sp $sp -4 #allocate stack space
     sw $s3 0($sp)
     
+    # first we see if we even should play a note
+    lw $t0 do_not_play_note_on_this_frame
+    beq $t0 1 play_music_END
+    
     lw $s0 sixteenth_note_number
     bne $s0 0 PLAY_NOTE_2
+    
+    ## Phrase 1
     PLAY_NOTE_1:
     li $v0 31
-    li $a0 0
-    li $a1 1000
+    li $a0 100
+    li $a1 10000
     li $a2 0
     li $a3 100
     syscall
     PLAY_NOTE_2:
+    bne $s0 4 PLAY_NOTE_3
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_3:
+    bne $s0 6 PLAY_NOTE_4
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_4:
+    bne $s0 8 PLAY_NOTE_5
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_5:
+    bne $s0 12 PLAY_NOTE_6
+    li $v0 31
+    li $a0 101
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_6:
+    bne $s0 16 PLAY_NOTE_7
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_7:
+    bne $s0 20 PLAY_NOTE_8
+    li $v0 31
+    li $a0 98
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_8:
+    bne $s0 24 PLAY_NOTE_9
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    
+    ### Phrase 2
+    PLAY_NOTE_9:
+    bne $s0 32 PLAY_NOTE_10
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_10:
+    bne $s0 36 PLAY_NOTE_11
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_11:
+    bne $s0 38 PLAY_NOTE_12
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_12:
+    bne $s0 40 PLAY_NOTE_13
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_13:
+    bne $s0 44 PLAY_NOTE_14
+    li $v0 31
+    li $a0 101
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_14:
+    bne $s0 48 PLAY_NOTE_15
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_15:
+    bne $s0 52 PLAY_NOTE_16
+    li $v0 31
+    li $a0 98
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_16:
+    bne $s0 56 PLAY_NOTE_17
+    li $v0 31
+    li $a0 96
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    
+    # phrase 1 of theme B
+    PLAY_NOTE_17:
+    bne $s0 64 PLAY_NOTE_18
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_18:
+    bne $s0 68 PLAY_NOTE_19
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_19:
+    bne $s0 70 PLAY_NOTE_20
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_20:
+    bne $s0 72 PLAY_NOTE_21
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_21:
+    bne $s0 76 PLAY_NOTE_22
+    li $v0 31
+    li $a0 103
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_22:
+    bne $s0 80 PLAY_NOTE_23
+    li $v0 31
+    li $a0 103
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_23:
+    bne $s0 84 PLAY_NOTE_24
+    li $v0 31
+    li $a0 101
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_24:
+    bne $s0 88 PLAY_NOTE_25
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    
+    # theme B Phrase 2
+    PLAY_NOTE_25:
+    bne $s0 96 PLAY_NOTE_26
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_26:
+    bne $s0 100 PLAY_NOTE_27
+    li $v0 31
+    li $a0 98
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_27:
+    bne $s0 104 PLAY_NOTE_28
+    li $v0 31
+    li $a0 96
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_28:
+    bne $s0 108 PLAY_NOTE_29
+    li $v0 31
+    li $a0 95
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_29:
+    bne $s0 112 play_music_END
+    li $v0 31
+    li $a0 93
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    ## loop on sixteenth note 132
+    j play_music_END
+    
+    play_music_END:
     #Epilogue
     lw $s3 0($sp) # pop $s1 from stack;
     addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
@@ -523,11 +757,18 @@ increment_sixteenth_note_number:
     lw $t0 sixteenth_note_frame_incrementer
     lw $t1 FRAMES_IN_SIXTEENTH_NOTE
     beq $t0 $t1 can_increment_sixteenth_note
-    # here we cannot increment a sixteenth note so we just increment sixteenth_note_frame_incrementer
+    # here we cannot increment a sixteenth note so we just increment sixteenth_note_frame_incrementer, meaning we shouldn't play a new note here
     addi $t0 $t0 1
     sw $t0 sixteenth_note_frame_incrementer
+    
+    # set so we can't play new note:
+    li $t0 1
+    sw $t0 do_not_play_note_on_this_frame
     j increment_sixteenth_note_number_END
     can_increment_sixteenth_note:
+    # here we can play a note
+    li $t0 0
+    sw $t0 do_not_play_note_on_this_frame
     # We must first check if the sixteenth note has reached SIXTTEENTH_NOTES_IN_TRACK
     lw $t0 sixteenth_note_number
     lw $t1 SIXTEENTH_NOTES_IN_TRACK

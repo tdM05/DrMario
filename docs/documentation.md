@@ -16,6 +16,8 @@
 
 ### sixteenth_note_frame_incrementer
 
+### do_not_play_note_on_this_frame
+
 ## play_music
 
 **Purpose**: plays music based on where we are (sixteenth_note_number)
