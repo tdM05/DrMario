@@ -6,6 +6,41 @@
 - $s3 - this saves the player's expected next column before checking collision
 - $s4 - this saves the player's expected next rotation before checking collision
 
+# MUSIC constants, variables and functions
+
+### FRAMES_IN_SIXTEENTH_NOTE
+
+### SIXTTEENTH_NOTES_IN_TRACK
+
+### sixteenth_note_number
+
+### sixteenth_note_frame_incrementer
+
+## play_music
+
+**Purpose**: plays music based on where we are (sixteenth_note_number)
+
+**Parameters**:
+
+- None
+
+**Return Value**
+
+- None
+
+## increment_sixteenth_note_number
+
+**Purpose**: increments sixteenth_note_number if needed using,
+sixteenth_note_frame_incrementer, and FRAMES_IN_SIXTEENTH_NOTE
+
+**Parameters**:
+
+- None
+
+**Return Value**
+
+- None
+
 # Constants
 
 ### EMPTY_COLOR
@@ -66,6 +101,7 @@ Color2 of the player
 - the column (in pixels) of the player between 0 and 64 inclusive
 
 ### move_col_array
+
 - array of information to move col down (col, empty row # , first row # need to move, # of unit need to be moved)
 
 # I/O Functions
@@ -114,29 +150,26 @@ Color2 of the player
 - $a0 - Color
 - $a1 - The top left pixel memory location in memory for that unit
 
-
 ## move_one_unit_down
 
-**Purpose**: Draws a move unit with top left corner address $a1 to unit with top left corner address $a0. 
+**Purpose**: Draws a move unit with top left corner address $a1 to unit with top left corner address $a0.
 
 **Parameters**:
 
-- $a0 - down address 
+- $a0 - down address
 - $a1 - original adress
-
-
 
 ## move_col_down
 
-**Purpose**: move 1 columb down 
+**Purpose**: move 1 columb down
 
 **Parameters**:
-- use move_col_array
-- 0 - col number 
-- 1 - empty row # 
-- 2 - first row # need to move 
-- 3 - # of col need to move 
 
+- use move_col_array
+- 0 - col number
+- 1 - empty row #
+- 2 - first row # need to move
+- 3 - # of col need to move
 
 ## draw_row
 
@@ -304,14 +337,15 @@ the screen positions.
 
 **Return Value**: None
 
-
-
 ## update_number_of_unit_need_move
-**Purpose**: find number of unit need move for move col down 
 
-**Parameters**: 
-- $a0 row 
+**Purpose**: find number of unit need move for move col down
+
+**Parameters**:
+
+- $a0 row
 - $a1 col
 
-**Return Value**: 
-- $v0 # of unit need to be moved 
+**Return Value**:
+
+- $v0 # of unit need to be moved

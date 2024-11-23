@@ -23,6 +23,9 @@ PLAYER_FAST_FALL_DIVIDER: .word 30
 PLAYER_NORMAL_FALL_DIVIDER: .word 6
 PLAYER_TOTAL_FALL_TIME: .word 300
 
+FRAMES_IN_SIXTEENTH_NOTE: .word 10
+SIXTEENTH_NOTES_IN_TRACK: .word 2
+
 # Dimensions
 BOTAL_TOP_ROW: .word 4
 BOTAL_BOTTOM_ROW: .word 18
@@ -71,6 +74,11 @@ capsule_orientation_array: .space 660  # array of orientation of capsule. 11 col
 number_of_col_to_move: .word 0 # this is the place to record number of col need to move for 4 in a row move everything down horizontal 
 player_is_fast_falling: .word 0
 
+
+# this is for keeping track of the music and it resets/loops when it reaches 
+sixteenth_note_number: .word 0
+# this is used to increment sixteenth_note_number. Resets when it gets to FRAMES_IN_SIXTEENTH_NOTE
+sixteenth_note_frame_incrementer: .word 1
 ##############################################################################
 # Code
 ##############################################################################
@@ -79,6 +87,12 @@ player_is_fast_falling: .word 0
 
     # Run the game.
 main:
+    li $v0 31
+    li $a0 0
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
     # Initialize the game
     # Paint the bottle
     addi $s0 $zero 2 # first bottle unit row
@@ -264,6 +278,14 @@ main:
 	li 		$a0, 1
 	syscall
 	
+    # play music
+    jal play_music
+    jal increment_sixteenth_note_number
+    
+    # test that sixteenth_note_number and sixteenth_note_frame_incrementerre correct
+    lw $t0 sixteenth_note_number
+    lw $t1 sixteenth_note_frame_incrementer
+    
     # remove the previous frame
     jal remove_player
         
@@ -443,10 +465,102 @@ HIT_BOTTOM:
     # randomnize next color and draw
     jal randomize_next_capsule
     jal draw_next_capsule
+    
     j game_loop
     
 ######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
 
+######################### Play Music stuff #####################################
+play_music:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s0 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s1 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s2 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s3 0($sp)
+    
+    lw $s0 sixteenth_note_number
+    bne $s0 0 PLAY_NOTE_2
+    PLAY_NOTE_1:
+    li $v0 31
+    li $a0 0
+    li $a1 1000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_2:
+    #Epilogue
+    lw $s3 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s2 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s1 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s0 0($sp) # pop $s0 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    
+    jr $ra
+increment_sixteenth_note_number:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s0 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s1 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s2 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s3 0($sp)
+    
+    lw $t0 sixteenth_note_frame_incrementer
+    lw $t1 FRAMES_IN_SIXTEENTH_NOTE
+    beq $t0 $t1 can_increment_sixteenth_note
+    # here we cannot increment a sixteenth note so we just increment sixteenth_note_frame_incrementer
+    addi $t0 $t0 1
+    sw $t0 sixteenth_note_frame_incrementer
+    j increment_sixteenth_note_number_END
+    can_increment_sixteenth_note:
+    # We must first check if the sixteenth note has reached SIXTTEENTH_NOTES_IN_TRACK
+    lw $t0 sixteenth_note_number
+    lw $t1 SIXTEENTH_NOTES_IN_TRACK
+    beq $t0 $t1 reset_track
+    # here we can increment a sixteenth note so we do that, and reset sixteenth_note_frame_incrementer
+    lw $t0 sixteenth_note_number
+    addi $t0 $t0 1
+    sw $t0 sixteenth_note_number
+
+    li $t0 1
+    sw $t0 sixteenth_note_frame_incrementer
+    j increment_sixteenth_note_number_END
+    
+    reset_track:
+    sw $zero sixteenth_note_number
+    li $t0 1
+    sw $t0 sixteenth_note_frame_incrementer
+    j increment_sixteenth_note_number_END
+    increment_sixteenth_note_number_END:
+    
+    
+    #Epilogue
+    lw $s3 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s2 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s1 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s0 0($sp) # pop $s0 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
 ########################### HIT_BOTTOM ###################################
 remove_four_in_a_row:
     # Prologue
