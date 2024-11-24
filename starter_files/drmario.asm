@@ -19,18 +19,14 @@
 ##############################################################################
 # Immutable Data
 ##############################################################################
-PLAYER_FAST_FALL_DIVIDER: .word 30
-PLAYER_NORMAL_FALL_DIVIDER: .word 6
-PLAYER_TOTAL_FALL_TIME: .word 300
-
-FRAMES_IN_SIXTEENTH_NOTE: .word 15
+PLAYER_TOTAL_FALL_TIME: .word 128
 SIXTEENTH_NOTES_IN_TRACK: .word 128
 
 # Dimensions
 BOTAL_TOP_ROW: .word 4
 BOTAL_BOTTOM_ROW: .word 18
 BOTAL_LEFT_COL: .word 3
-BOTAL_RIGHT_COL: .word 13
+BOTAL_RIGHT_COL: .word 14
 
 DISP_WIDTH:
     .word 64
@@ -62,6 +58,11 @@ next_capsule_col: .word 17
 ##############################################################################
 # Mutable Data
 ##############################################################################
+# These are now mutable since we it speeds up when the music repeats.
+PLAYER_FAST_FALL_DIVIDER: .word 30
+PLAYER_NORMAL_FALL_DIVIDER: .word 4
+FRAMES_IN_SIXTEENTH_NOTE: .word 15
+
 player_row: .word 3 # between 0 and 63 inclusive
 player_col: .word 8 # between 0 and 63 inclusive
 player_rotation: .word 1 # 1 means color 2 on top color 1 on bottom, 2 means color 1 on left, color 2 on right, ... this is between 1 and 4 inclusive
@@ -75,7 +76,7 @@ number_of_col_to_move: .word 0 # this is the place to record number of col need 
 player_is_fast_falling: .word 0
 
 
-# this is for keeping track of the music and it resets/loops when it reaches 
+# this is for keeping track of the music and it resets/loops when it reaches SIXTEENTH_NOTES_IN_TRACK
 sixteenth_note_number: .word 0
 # this is used to increment sixteenth_note_number. Resets when it gets to FRAMES_IN_SIXTEENTH_NOTE
 sixteenth_note_frame_incrementer: .word 1
@@ -786,6 +787,26 @@ increment_sixteenth_note_number:
     sw $zero sixteenth_note_number
     li $t0 1
     sw $t0 sixteenth_note_frame_incrementer
+    # since we reset, we make things go 1 faster if we music speed isn't 3
+    lw $t0 FRAMES_IN_SIXTEENTH_NOTE
+    sub $t0 $t0 3 # if frames in sixteenth note is less than or equal to 3, we branch
+    blez $t0 increment_sixteenth_note_number_END
+    
+    # add normal fall divider by 2
+    lw $t0 PLAYER_NORMAL_FALL_DIVIDER
+    addi $t0 $t0 2
+    sw $t0 PLAYER_NORMAL_FALL_DIVIDER
+    
+    # add fast fall divider by 2
+    lw $t0 PLAYER_FAST_FALL_DIVIDER
+    addi $t0 $t0 2
+    sw $t0 PLAYER_FAST_FALL_DIVIDER
+    
+    # remove frames in sixteenth note by 1
+    lw $t0 FRAMES_IN_SIXTEENTH_NOTE
+    addi $t0 $t0 -3
+    sw $t0 FRAMES_IN_SIXTEENTH_NOTE
+    
     j increment_sixteenth_note_number_END
     increment_sixteenth_note_number_END:
     
@@ -921,13 +942,7 @@ remove_four_in_a_row:
                     
                     jal update_number_of_unit_need_move
                     
-                    sw $v0 12($a3)
-                    
-       
-                    
-                    
-                    
-                    
+                    sw $v0 12($a3)    
                     
                     jal move_col_down
                     
@@ -937,12 +952,7 @@ remove_four_in_a_row:
                     
                     addi $t9 $t9 1
                     j row_move_everything_loop
-                    row_move_everything_down_done:
-                    
-                    
-                    
-                    
-                    
+                    row_move_everything_down_done: 
                     # reset the saved position and color
                     move $s2 $s1                
                     move $a0 $s0
