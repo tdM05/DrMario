@@ -19,15 +19,14 @@
 ##############################################################################
 # Immutable Data
 ##############################################################################
-PLAYER_FAST_FALL_DIVIDER: .word 30
-PLAYER_NORMAL_FALL_DIVIDER: .word 6
-PLAYER_TOTAL_FALL_TIME: .word 300
+PLAYER_TOTAL_FALL_TIME: .word 128
+SIXTEENTH_NOTES_IN_TRACK: .word 128
 
 # Dimensions
 BOTAL_TOP_ROW: .word 4
 BOTAL_BOTTOM_ROW: .word 18
 BOTAL_LEFT_COL: .word 3
-BOTAL_RIGHT_COL: .word 13
+BOTAL_RIGHT_COL: .word 14
 
 DISP_WIDTH:
     .word 64
@@ -59,6 +58,11 @@ next_capsule_col: .word 17
 ##############################################################################
 # Mutable Data
 ##############################################################################
+# These are now mutable since we it speeds up when the music repeats.
+PLAYER_FAST_FALL_DIVIDER: .word 30
+PLAYER_NORMAL_FALL_DIVIDER: .word 4
+FRAMES_IN_SIXTEENTH_NOTE: .word 15
+
 player_row: .word 3 # between 0 and 63 inclusive
 player_col: .word 8 # between 0 and 63 inclusive
 player_rotation: .word 1 # 1 means color 2 on top color 1 on bottom, 2 means color 1 on left, color 2 on right, ... this is between 1 and 4 inclusive
@@ -71,6 +75,12 @@ capsule_orientation_array: .space 660  # array of orientation of capsule. 11 col
 number_of_col_to_move: .word 0 # this is the place to record number of col need to move for 4 in a row move everything down horizontal 
 player_is_fast_falling: .word 0
 
+
+# this is for keeping track of the music and it resets/loops when it reaches SIXTEENTH_NOTES_IN_TRACK
+sixteenth_note_number: .word 0
+# this is used to increment sixteenth_note_number. Resets when it gets to FRAMES_IN_SIXTEENTH_NOTE
+sixteenth_note_frame_incrementer: .word 1
+do_not_play_note_on_this_frame: .byte 1
 ##############################################################################
 # Code
 ##############################################################################
@@ -264,6 +274,14 @@ main:
 	li 		$a0, 1
 	syscall
 	
+    # play music
+    jal play_music
+    jal increment_sixteenth_note_number
+    
+    # test that sixteenth_note_number and sixteenth_note_frame_incrementerre correct
+    lw $t0 sixteenth_note_number
+    lw $t1 sixteenth_note_frame_incrementer
+    
     # remove the previous frame
     jal remove_player
         
@@ -443,10 +461,368 @@ HIT_BOTTOM:
     # randomnize next color and draw
     jal randomize_next_capsule
     jal draw_next_capsule
+    
     j game_loop
     
 ######################### Stuff here won't be run directly since j game_loop causes prevents code reaching here #############
 
+######################### Play Music stuff #####################################
+play_music:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s0 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s1 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s2 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s3 0($sp)
+    
+    # first we see if we even should play a note
+    lw $t0 do_not_play_note_on_this_frame
+    beq $t0 1 play_music_END
+    
+    lw $s0 sixteenth_note_number
+    bne $s0 0 PLAY_NOTE_2
+    
+    ## Phrase 1
+    PLAY_NOTE_1:
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_2:
+    bne $s0 4 PLAY_NOTE_3
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_3:
+    bne $s0 6 PLAY_NOTE_4
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_4:
+    bne $s0 8 PLAY_NOTE_5
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_5:
+    bne $s0 12 PLAY_NOTE_6
+    li $v0 31
+    li $a0 101
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_6:
+    bne $s0 16 PLAY_NOTE_7
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_7:
+    bne $s0 20 PLAY_NOTE_8
+    li $v0 31
+    li $a0 98
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_8:
+    bne $s0 24 PLAY_NOTE_9
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    
+    ### Phrase 2
+    PLAY_NOTE_9:
+    bne $s0 32 PLAY_NOTE_10
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_10:
+    bne $s0 36 PLAY_NOTE_11
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_11:
+    bne $s0 38 PLAY_NOTE_12
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_12:
+    bne $s0 40 PLAY_NOTE_13
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_13:
+    bne $s0 44 PLAY_NOTE_14
+    li $v0 31
+    li $a0 101
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_14:
+    bne $s0 48 PLAY_NOTE_15
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_15:
+    bne $s0 52 PLAY_NOTE_16
+    li $v0 31
+    li $a0 98
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_16:
+    bne $s0 56 PLAY_NOTE_17
+    li $v0 31
+    li $a0 96
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    
+    # phrase 1 of theme B
+    PLAY_NOTE_17:
+    bne $s0 64 PLAY_NOTE_18
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_18:
+    bne $s0 68 PLAY_NOTE_19
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_19:
+    bne $s0 70 PLAY_NOTE_20
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_20:
+    bne $s0 72 PLAY_NOTE_21
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_21:
+    bne $s0 76 PLAY_NOTE_22
+    li $v0 31
+    li $a0 103
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_22:
+    bne $s0 80 PLAY_NOTE_23
+    li $v0 31
+    li $a0 103
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_23:
+    bne $s0 84 PLAY_NOTE_24
+    li $v0 31
+    li $a0 101
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_24:
+    bne $s0 88 PLAY_NOTE_25
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    
+    # theme B Phrase 2
+    PLAY_NOTE_25:
+    bne $s0 96 PLAY_NOTE_26
+    li $v0 31
+    li $a0 100
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_26:
+    bne $s0 100 PLAY_NOTE_27
+    li $v0 31
+    li $a0 98
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_27:
+    bne $s0 104 PLAY_NOTE_28
+    li $v0 31
+    li $a0 96
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_28:
+    bne $s0 108 PLAY_NOTE_29
+    li $v0 31
+    li $a0 95
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    PLAY_NOTE_29:
+    bne $s0 112 play_music_END
+    li $v0 31
+    li $a0 93
+    li $a1 10000
+    li $a2 0
+    li $a3 100
+    syscall
+    ## loop on sixteenth note 132
+    j play_music_END
+    
+    play_music_END:
+    #Epilogue
+    lw $s3 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s2 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s1 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s0 0($sp) # pop $s0 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    
+    jr $ra
+increment_sixteenth_note_number:
+    # Prologue
+    addi $sp $sp -4 #allocate stack space
+    sw $ra 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s0 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s1 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s2 0($sp)
+    addi $sp $sp -4 #allocate stack space
+    sw $s3 0($sp)
+    
+    lw $t0 sixteenth_note_frame_incrementer
+    lw $t1 FRAMES_IN_SIXTEENTH_NOTE
+    beq $t0 $t1 can_increment_sixteenth_note
+    # here we cannot increment a sixteenth note so we just increment sixteenth_note_frame_incrementer, meaning we shouldn't play a new note here
+    addi $t0 $t0 1
+    sw $t0 sixteenth_note_frame_incrementer
+    
+    # set so we can't play new note:
+    li $t0 1
+    sw $t0 do_not_play_note_on_this_frame
+    j increment_sixteenth_note_number_END
+    can_increment_sixteenth_note:
+    # here we can play a note
+    li $t0 0
+    sw $t0 do_not_play_note_on_this_frame
+    # We must first check if the sixteenth note has reached SIXTTEENTH_NOTES_IN_TRACK
+    lw $t0 sixteenth_note_number
+    lw $t1 SIXTEENTH_NOTES_IN_TRACK
+    beq $t0 $t1 reset_track
+    # here we can increment a sixteenth note so we do that, and reset sixteenth_note_frame_incrementer
+    lw $t0 sixteenth_note_number
+    addi $t0 $t0 1
+    sw $t0 sixteenth_note_number
+
+    li $t0 1
+    sw $t0 sixteenth_note_frame_incrementer
+    j increment_sixteenth_note_number_END
+    
+    reset_track:
+    sw $zero sixteenth_note_number
+    li $t0 1
+    sw $t0 sixteenth_note_frame_incrementer
+    # since we reset, we make things go 1 faster if we music speed isn't 3
+    lw $t0 FRAMES_IN_SIXTEENTH_NOTE
+    sub $t0 $t0 3 # if frames in sixteenth note is less than or equal to 3, we branch
+    blez $t0 increment_sixteenth_note_number_END
+    
+    # add normal fall divider by 2
+    lw $t0 PLAYER_NORMAL_FALL_DIVIDER
+    addi $t0 $t0 2
+    sw $t0 PLAYER_NORMAL_FALL_DIVIDER
+    
+    # add fast fall divider by 2
+    lw $t0 PLAYER_FAST_FALL_DIVIDER
+    addi $t0 $t0 2
+    sw $t0 PLAYER_FAST_FALL_DIVIDER
+    
+    # remove frames in sixteenth note by 1
+    lw $t0 FRAMES_IN_SIXTEENTH_NOTE
+    addi $t0 $t0 -3
+    sw $t0 FRAMES_IN_SIXTEENTH_NOTE
+    
+    j increment_sixteenth_note_number_END
+    increment_sixteenth_note_number_END:
+    
+    
+    #Epilogue
+    lw $s3 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s2 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s1 0($sp) # pop $s1 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $s0 0($sp) # pop $s0 from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    lw $ra 0($sp) # pop $ra from stack;
+    addi $sp $sp 4 # move stack pointer back down (to the new top of stack)
+    jr $ra
 ########################### HIT_BOTTOM ###################################
 remove_four_in_a_row:
     # Prologue
@@ -566,13 +942,7 @@ remove_four_in_a_row:
                     
                     jal update_number_of_unit_need_move
                     
-                    sw $v0 12($a3)
-                    
-       
-                    
-                    
-                    
-                    
+                    sw $v0 12($a3)    
                     
                     jal move_col_down
                     
@@ -582,12 +952,7 @@ remove_four_in_a_row:
                     
                     addi $t9 $t9 1
                     j row_move_everything_loop
-                    row_move_everything_down_done:
-                    
-                    
-                    
-                    
-                    
+                    row_move_everything_down_done: 
                     # reset the saved position and color
                     move $s2 $s1                
                     move $a0 $s0

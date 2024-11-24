@@ -20,6 +20,13 @@ ADDR_DSPL:
 	.globl main
 
 main:
+    li $v0 31
+    li $a0 0
+    li $a1 1000
+    li $a2 0
+    li $a3 100
+    syscall
+    
     li $t1, 0xff0000        # $t1 = red
     li $t2, 0x00ff00        # $t2 = green
     li $t3, 0x0000ff        # $t3 = blue
