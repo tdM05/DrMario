@@ -911,8 +911,10 @@ remove_four_in_a_row:
     #s0 = row incrementer
     # $s1 = col incrementer
     #s2 = last different position
+    #s3 = our return value
     #s4 = last color
     
+    li $s3 0
     # go row by row (increment column)
     lw $s0 BOTAL_BOTTOM_ROW
     lw $s1 BOTAL_LEFT_COL
@@ -963,7 +965,7 @@ remove_four_in_a_row:
                     j REMOVE_FOUR_IN_A_COL_ROW_LOOP_END
                 REMOVE_EVERYTHING_BETWEEN_S2_AND_S1:
                     # start at s2+1, and loop until s4 - 1 to set everything between black
-                                    
+                    li $s3 1                
                     #s0 = row incrementer
                     #s1 = col incrementer
                     #s2 = last different position
@@ -1153,6 +1155,7 @@ remove_four_in_a_row:
        lw $t1 BOTAL_RIGHT_COL       
        bne $s1 $t1 REMOVE_FOUR_IN_A_ROW_COL_LOOP2 
        
+    move $v0 $s3   
     
     #Epilogue
     lw $s4 0($sp) # pop $s1 from stack;
