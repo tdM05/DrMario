@@ -390,7 +390,7 @@ main:
         jal can_move_here_with_rotation_i
         li $v0 31
         li $a0 50
-        li $a1 1000
+        li $a1 100
         li $a2 50
         li $a3 127
         syscall
