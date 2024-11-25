@@ -388,6 +388,12 @@ main:
         lw $a0 player_row
         lw $a1 player_col
         jal can_move_here_with_rotation_i
+        li $v0 31
+        li $a0 50
+        li $a1 1000
+        li $a2 50
+        li $a3 127
+        syscall
         beq $v0 0 END
         
         sw $s4 player_rotation
@@ -407,6 +413,7 @@ main:
         move $a1 $v1
         lw $a2 player_rotation
         jal can_move_here_with_rotation_i
+    
         beq $v0 0 END
         
         
@@ -465,6 +472,12 @@ HIT_BOTTOM:
 # here we check for four (or more) in a rows, remove four in a rows, and then make all floating blocks fall, then add a new player capsule.
 
     jal draw_player
+    li $v0 31
+        li $a0 50
+        li $a1 100
+        li $a2 20
+        li $a3 127
+        syscall
     jal remove_four_in_a_row
     
     sw $zero  player_is_fast_falling
@@ -977,8 +990,13 @@ remove_four_in_a_row:
                     
                     li $a3 0x0
                     jal draw_row
-                    
-                    
+                    li $v0 31
+                    li $a0 90
+                    li $a1 100
+                    li $a2 30
+                    li $a3 100
+                    syscall
+                                    
                     
                     
                     # we find # of unit need to be moved 
@@ -1007,6 +1025,7 @@ remove_four_in_a_row:
                     sw $a0 0($a3)
                     
                     addi $t9 $t9 1
+                    
                     j row_move_everything_loop
                     row_move_everything_down_done: 
                     # reset the saved position and color
@@ -1120,7 +1139,12 @@ remove_four_in_a_row:
                     move $a1 $s1
                     jal get_unit
                     lw $s4 0($v0)
-                    
+                    li $v0 31
+                    li $a0 90
+                    li $a1 100
+                    li $a2 30
+                    li $a3 100
+                    syscall
                     j REMOVE_FOUR_IN_A_COL_ROW_LOOP_END2
                 REMOVE_FOUR_IN_A_COL_ROW_LOOP_END2:
                 lw $t0 BOTAL_TOP_ROW
