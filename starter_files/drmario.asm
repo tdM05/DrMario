@@ -43,6 +43,8 @@ BOTTLE_COlOR:
 EMPTY_COLOR:
     .word 0x000000
 #Keyboard#
+P:
+    .word 0x70
 Q:
     .word 0x71
 D:
@@ -62,6 +64,7 @@ next_capsule_col: .word 17
 PLAYER_FAST_FALL_DIVIDER: .word 30
 PLAYER_NORMAL_FALL_DIVIDER: .word 4
 FRAMES_IN_SIXTEENTH_NOTE: .word 15
+virus_number: .word 4
 
 player_row: .word 3 # between 0 and 63 inclusive
 player_col: .word 8 # between 0 and 63 inclusive
@@ -89,6 +92,44 @@ do_not_play_note_on_this_frame: .byte 1
 
     # Run the game.
 main:
+
+    # choose the level : A ---> easy S ---> medium D ----> hard 
+    choose_level:
+    jal key_pressed
+    bne $v0 1 choose_level
+    
+    lw $t0 A
+    bne $v1 $t0 Not_Easy
+    la $t1 PLAYER_NORMAL_FALL_DIVIDER
+    addi $t2 $zero 1
+    sw $t2 0($t1)
+    la $t1 virus_number
+    sw $t2 0($t1)
+    j lets_go
+
+
+    Not_Easy:
+    lw $t0 S
+    bne $v1 $t0 Not_Medium
+    la $t1 PLAYER_NORMAL_FALL_DIVIDER
+    addi $t2 $zero 2
+    sw $t2 0($t1)
+    la $t1 virus_number
+    sw $t2 0($t1)
+    j lets_go
+
+    Not_Medium:
+    lw $t0 D
+    bne $v1 $t0 choose_level
+    la $t1 PLAYER_NORMAL_FALL_DIVIDER
+    addi $t2 $zero 4
+    sw $t2 0($t1)
+    la $t1 virus_number
+    sw $t2 0($t1)
+    j lets_go
+
+
+    lets_go:
     # Initialize the game
     # Paint the bottle
     addi $s0 $zero 2 # first bottle unit row
@@ -164,14 +205,15 @@ main:
     clear_capsule_orientation_array_end:
     
     
-    # spawn 4 virus 
+    # spawn  virus 
     
     addi $sp $sp -4 #allocate stack space
     sw $s6 0($sp)
     addi $sp $sp -4 #allocate stack space
     sw $s7 0($sp)
     
-    addi $s6 $zero 4 # $s6 hold 4 (max i )
+    la $s6 virus_number
+    lw $s6 0($s6) # $s6 hold 1/2/4 (max i )
     addi $s7 $zero 0 # $s7 hold i (start from 0)
     virus_loop:
     beq $s6 $s7 spwan_virus_done
@@ -291,7 +333,21 @@ main:
     bne $v0 1 ELSE # if equals 1 (the key is pressed)
         move $s0 $v1 # $s0 should not change here since it contains the actual key.
         
+        lw $t0 P
+        bne $s0 $t0 Not_P
+        Pause_loop:
+        jal key_pressed
+        
+        beq $v0 0 pause_cont
+        lw $t0 P
+        bne $v1 $t0 pause_cont
+        j Not_P
+        pause_cont:
+        j Pause_loop
+        
+        
    # if q preseed 
+   Not_P:
         lw $t0 Q
         bne $s0 $t0 Not_Q
         jal draw_player
