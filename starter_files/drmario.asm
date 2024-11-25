@@ -478,8 +478,9 @@ HIT_BOTTOM:
         li $a2 20
         li $a3 127
         syscall
+    four_in_a_row_start:
     jal remove_four_in_a_row
-    
+    beq $v0 1 four_in_a_row_start
     sw $zero  player_is_fast_falling
     # if bottle neck has color then game end 
     li $a0 3
