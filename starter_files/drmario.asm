@@ -336,11 +336,13 @@ main:
         lw $t0 P
         bne $s0 $t0 Not_P
         Pause_loop:
+        jal draw_player
         jal key_pressed
         
         beq $v0 0 pause_cont
         lw $t0 P
         bne $v1 $t0 pause_cont
+        jal remove_player
         j Not_P
         pause_cont:
         j Pause_loop
