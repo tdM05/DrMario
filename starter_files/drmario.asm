@@ -388,12 +388,14 @@ main:
         lw $a0 player_row
         lw $a1 player_col
         jal can_move_here_with_rotation_i
+        move $s5 $v0
         li $v0 31
         li $a0 50
         li $a1 100
         li $a2 50
         li $a3 127
         syscall
+        move $v0 $s5
         beq $v0 0 END
         
         sw $s4 player_rotation
