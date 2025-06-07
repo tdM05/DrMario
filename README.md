@@ -1,3 +1,3 @@
-# This is the doctor mario project for csc258
+# Welcome to Dr Mario created by Tadd and Rey
 
-Here is the description
+
