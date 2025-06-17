@@ -1,4 +1,4 @@
-# Welcome to Dr Mario created by Tadd and Rey
+# Welcome to Dr Mario created by Tadd and Ray
 
 We decided to take an old retro game Dr Mario, and use the og retro code of assembly to recreate Dr Mario.
 
